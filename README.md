@@ -75,6 +75,24 @@ Everything runs through the interactive helper **`flash.sh`** (whiptail TUI):
 
 ## 🖥️ Usage
 
+### WiFi setup (first run / captive portal)
+
+On first boot — or after a factory reset, or whenever it can't reach a saved network — the ESP opens its own access point and waits for you to configure WiFi:
+
+1. Wait ~15 s for the ESP to boot.
+2. On your phone/PC, open the WiFi list and connect to the **open** network **`OWON-XDM-Remote-Setup`**.
+3. The setup page usually opens automatically (captive portal). If not, open **`http://192.168.4.1`** in a browser.
+4. In the portal:
+   - pick your WiFi from the scanned list (use the **↻ Refresh** button to rescan),
+   - enter the **password** twice (with **Show password** to verify it),
+   - tap **Save & Connect**.
+5. A **"Saved"** page appears with a spinner. Now **reconnect your phone/PC to your normal WiFi** (the `OWON-XDM-Remote-Setup` AP disappears once the ESP joins your network).
+6. As soon as you're back on your network, the page **automatically redirects to `http://owon.local/`**. Done. 🎉
+
+> The WiFi credentials are stored on the ESP, so it reconnects on its own after a reboot/power-cycle. You can change the network later in **Settings → System → Factory reset** (which re-opens the setup portal), or just re-flash.
+
+### Daily use
+
 Open **`http://owon.local/`** (or your hostname).
 
 - **Tabs at the top**: pick the measurement function, sub-modes underneath.
@@ -144,44 +162,6 @@ print(inst.query('MEAS?'))      # current value
 inst.write('CONF:VOLT:AC')      # switch function
 ```
 Web UI and PyVISA run **at the same time** (both go through the single poller, serialized with a lock). Line protocol: `<cmd>\n`; commands ending in `?` return a reply, others are writes. See `pyvisa_test.py`.
-
----
-
-## 📟 SCPI reference (XDM1041, verified)
-
-| Purpose | Command |
-|---|---|
-| Reading | `MEAS?` (≈3–5/s; `1E+9` = overload) |
-| Function | `CONF:VOLT:DC` · `CONF:VOLT:AC` · `CONF:CURR:DC` · `CONF:CURR:AC` · `CONF:RES` · `CONF:CONT` · `CONF:DIOD` · `CONF:CAP` · `CONF:FREQ` · `CONF:TEMP` |
-| Active function | `FUNC?` |
-| Sampling | `RATE S\|M\|F` · `RATE?` |
-| Range | `RANGE 1..6` (manual) · `AUTO 1` (autorange) · `RANGE?` · `AUTO?` |
-
-> Note: `VAL1?`/`FETC?` are not supported. There is **no** SCPI command to power/reboot the OWON.
-
----
-
-## 🗂️ Project layout
-
-```
-.
-├── flash.sh              # Interactive flasher (USB first-flash + OTA)
-├── pyvisa_test.py        # PyVISA test script (SCPI over port 5025)
-├── README.md
-├── LICENSE               # GPLv3
-├── NOTICE                # Credits / inherited vs new
-├── docs/screenshot.png
-├── production/           # KiCad PCB (from upstream)
-├── assets/               # images (from upstream)
-└── firmware/             # MicroPython source (what runs on the ESP)
-    ├── main.py           # Launcher: watchdog, boot counter, auto-rollback
-    ├── app.py            # Web app: UI, /api, poller, themes, network, SCPI server
-    ├── wifi_manager.py   # WiFi setup (captive portal) + OTA in AP mode
-    ├── ota.py            # OTA upload (streaming) + web console
-    ├── recovery.py       # Recovery server (WiFi + OTA + console)
-    ├── dbg.py            # Logging (serial + RAM ring for /console)
-    └── wd.py             # Hardware watchdog (shared)
-```
 
 ---
 
