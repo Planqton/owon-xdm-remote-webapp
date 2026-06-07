@@ -1,0 +1,47 @@
+OWON XDM1041 Remote Bench
+=========================
+
+Dieses Projekt ist ein ABGELEITETES WERK (derivative work / Fork) von:
+
+    Elektroarzt/owon-xdm-remote
+    https://github.com/Elektroarzt/owon-xdm-remote
+    Lizenz: GNU General Public License v3 (GPLv3)
+
+Da es auf diesem GPLv3-Projekt aufbaut, steht dieses Repository ebenfalls
+unter GPLv3 (siehe LICENSE). Bei Weitergabe/Veröffentlichung muss der
+Quellcode offen bleiben und die Urheber genannt werden.
+
+
+Übernommen / abgeleitet vom Original
+------------------------------------
+- wifi_manager.py
+    Ursprung: WiFiManager von Igor Ferreira (MIT-Lizenz, siehe Datei-Header),
+    modifiziert von Elektroarzt, hier weiter angepasst
+    (MQTT entfernt, Passwort-Bestätigung/„anzeigen", SSID-Refresh,
+     OTA im AP-Modus, Auto-Redirect, Watchdog-Fütterung).
+- SCPI-Startsequenz / UART-Handling in app.py
+    (Idle-Check, *IDN?-Handshake, "RATE F"-Schnellmodus, Logging-Idee)
+    stammt konzeptionell aus der main.py des Originals.
+- Hardware-Konzept & Verkabelung (OWON-UART <-> ESP) vom Original.
+
+
+Neu in dieser Variante (Eigenleistung)
+--------------------------------------
+- Portierung von ESP32-C3 auf ESP32-WROOM (UART2 GPIO16/17).
+- Komplettes Web-Dashboard (app.py): Tabs/Untermodi, seitliche Toolbar,
+  Live-Graph mit Achsen, Min/Max/Avg, Themes (Export/Import), Anzeige-/
+  Netzwerk-Einstellungen, Einheiten-Modus.
+- JSON-REST-API unter /api.
+- OTA-System (ota.py): Streaming-Upload, Web-Konsole; OTA in ALLEN Modi
+  (App, Recovery, Setup-AP).
+- Ausfallsicherheit: Watchdog (wd.py), Boot-Zähler, Voll-Set Golden-Snapshot
+  Rollback (good/), Recovery-Server (recovery.py), Logging (dbg.py).
+- Robuster Launcher/Bootloader (main.py).
+- PyVISA/SCPI-TCP-Server (Port 5025), parallel zur Web-UI.
+- Werkzeuge: flash.sh (USB-Erstflash + OTA mit Geräte-Auswahl),
+  pyvisa_test.py.
+
+MQTT/Home-Assistant-Anbindung des Originals wird hier NICHT verwendet.
+
+
+Danke an Elektroarzt und Igor Ferreira für die Vorarbeit.

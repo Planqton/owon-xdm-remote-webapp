@@ -1,0 +1,16 @@
+# Python-Cache
+__pycache__/
+*.pyc
+*.pyo
+
+# Heruntergeladene MicroPython-Firmware (groß; flash.sh lädt sie bei Bedarf)
+ESP32_GENERIC-*.bin
+
+# Lokale Laufzeit-Zustände
+.owon_last_host
+
+# Editor / OS
+*.swp
+*~
+.DS_Store
+.vscode/
