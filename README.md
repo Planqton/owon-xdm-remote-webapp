@@ -1,9 +1,9 @@
 # OWON XDM1041 Remote Bench 🌡️🔌
 
-WiFi remote & web interface for the **OWON XDM1041** bench multimeter, running on an **ESP32-WROOM** (MicroPython) — with a professional browser dashboard, live graph, OTA updates, web console, a PyVISA/SCPI server, and **brick-proof self-healing**.
+WiFi remote & web interface for the **OWON XDM1041** bench multimeter, running on an **ESP32-WROOM** (MicroPython) — with a professional browser dashboard, live graph, OTA updates, web console, and **brick-proof self-healing**.
 
 > **Derivative work / fork of [Elektroarzt/owon-xdm-remote](https://github.com/Elektroarzt/owon-xdm-remote) — licensed under GPLv3.**
-> The original (ESP32-C3 + MQTT) was the basis: `firmware/wifi_manager.py` comes from there (Igor Ferreira, mod. Elektroarzt), as does the SCPI startup handshake. This variant runs on a classic **ESP32-WROOM**, **without MQTT/Home Assistant** — instead a standalone web app, OTA, watchdog/rollback and a PyVISA SCPI server. See [`NOTICE`](NOTICE).
+> The original (ESP32-C3 + MQTT) was the basis: `firmware/wifi_manager.py` comes from there (Igor Ferreira, mod. Elektroarzt), as does the SCPI startup handshake. This variant runs on a classic **ESP32-WROOM**, **without MQTT/Home Assistant** — instead a standalone web app, OTA and watchdog/rollback. See [`NOTICE`](NOTICE).
 
 > 🚧 **Early development / work in progress.** This project is at an early stage. Expect rough edges and bugs — several features don't work as intended yet and things may change or break. Use at your own risk and feel free to open issues.
 
@@ -21,7 +21,6 @@ WiFi remote & web interface for the **OWON XDM1041** bench multimeter, running o
 - **Settings** in the browser: **3 themes** (Midnight/Carbon/Light) + fully customizable colors with **export/import**, **network** (hostname, DHCP/static IP), **display** (unit mode), **system** info + **Factory reset**.
 - **OTA updates** over WiFi — works in **every** state (app, recovery, setup-AP).
 - **Web console** (`/console`) — live log in the browser, including crash traceback. No USB needed for debugging.
-- **PyVISA / SCPI server** (port 5025) in parallel with the web UI.
 - **Brick-proof**: hardware watchdog + boot counter + full-set "golden snapshot" auto-rollback.
 - **mDNS** (`owon.local`), captive-portal WiFi setup with auto-redirect.
 
@@ -143,34 +142,12 @@ A bad update — crash, syntax error **or full hang** — self-heals **without U
 
 ---
 
-## 🧪 PyVISA / SCPI over the network (port 5025)
-
-The ESP runs a raw SCPI-TCP server **in parallel with the web UI** — your OWON becomes a network-capable instrument for PyVISA/LabVIEW/Python scripts.
-
-Install (PC, pure-Python backend, no NI-VISA needed):
-```bash
-python3 -m pip install --user --break-system-packages pyvisa pyvisa-py
-```
-Usage:
-```python
-import pyvisa
-rm = pyvisa.ResourceManager('@py')
-inst = rm.open_resource('TCPIP::owon.local::5025::SOCKET')
-inst.read_termination = '\n'; inst.write_termination = '\n'; inst.timeout = 3000
-print(inst.query('*IDN?'))      # OWON,XDM1041,...
-print(inst.query('MEAS?'))      # current value
-inst.write('CONF:VOLT:AC')      # switch function
-```
-Web UI and PyVISA run **at the same time** (both go through the single poller, serialized with a lock). Line protocol: `<cmd>\n`; commands ending in `?` return a reply, others are writes. See `pyvisa_test.py`.
-
----
-
 ## 📜 Credits & license
 
 This project is a **derivative work** of **[Elektroarzt/owon-xdm-remote](https://github.com/Elektroarzt/owon-xdm-remote)** and is therefore — like the original — licensed under the **GNU General Public License v3 (GPLv3)**, see [`LICENSE`](LICENSE).
 
 - **Original & basis:** Elektroarzt/owon-xdm-remote (hardware concept, `wifi_manager.py`, SCPI startup handshake).
 - `wifi_manager.py`: WiFiManager by **Igor Ferreira** (MIT), modified by Elektroarzt and extended here.
-- **New in this variant:** ESP32-WROOM port, full web app/REST API, OTA + recovery + watchdog + full-set rollback, PyVISA SCPI server, `flash.sh`, `pyvisa_test.py`.
+- **New in this variant:** ESP32-WROOM port, full web app/REST API, OTA + recovery + watchdog + full-set rollback, `flash.sh`.
 
 Detailed "inherited vs new" breakdown in [`NOTICE`](NOTICE). When distributing/publishing: comply with GPLv3 (open source + attribution).
