@@ -69,14 +69,14 @@ MODE_MAP = {
 TABS = [
     ('V',   [('VDC', 'DC'), ('VAC', 'AC')]),
     ('A',   [('ADC', 'DC'), ('AAC', 'AC')]),
-    ('Ω', [('RES', 'Widerstand'), ('CONT', 'Durchgang'), ('DIOD', 'Diode')]),
-    ('Cap', [('CAP', 'Kapazitaet')]),
-    ('Hz',  [('FREQ', 'Frequenz')]),
-    ('°C', [('TEMP', 'Temperatur')]),
+    ('Ω', [('RES', 'Resistance'), ('CONT', 'Continuity'), ('DIOD', 'Diode')]),
+    ('Cap', [('CAP', 'Capacitance')]),
+    ('Hz',  [('FREQ', 'Frequency')]),
+    ('°C', [('TEMP', 'Temperature')]),
 ]
 DEFAULT_MODE = 'VDC'
 
-CODE_TIMESTAMP = "2026-06-06 (app v9: SCPI server :5025)"
+CODE_TIMESTAMP = "2026-06-06 (app v10: english + factory)"
 
 # ─── Globals ──────────────────────────────────────────────────────────────────────
 uart_comm = None
@@ -251,8 +251,8 @@ def poll_once():
     global _v_ok, _v_val, _v_raw, _v_ts, _func, _rate, _range_req, _range_idx, _skip
     global _rpc_cmd, _rpc_resp, _rpc_seq
 
-    # 1) RPC (von /api/scpi und vom SCPI-TCP-Server): Query wartet auf Antwort,
-    #    Write (ohne '?') wird nur gesendet -> kein 1s-Timeout.
+    # 1) RPC (from /api/scpi and the SCPI-TCP server): a query waits for a reply,
+    #    a write (no '?') is only sent -> no 1s timeout.
     if _rpc_cmd is not None:
         c = _rpc_cmd
         try:
@@ -336,9 +336,9 @@ SNAP_FILES = ('dbg.py', 'ota.py', 'recovery.py', 'wifi_manager.py', 'app.py')
 
 
 def _mark_healthy():
-    """Stabiler Lauf bestätigt: Boot-Zähler nullen und einen kompletten
-    bekannt-guten Snapshot des App-Satzes nach /good/ sichern, damit der
-    Launcher nach einem kaputten OTA-Update ALLES wiederherstellen kann."""
+    """Stable run confirmed: clear the boot counter and save a complete
+    known-good snapshot of the app set to /good/, so the launcher can
+    restore EVERYTHING after a bad OTA update."""
     global _healthy
     _healthy = True
     try:
@@ -368,7 +368,7 @@ def _mark_healthy():
                 cnt += 1
             except Exception as e:
                 log('BOOT', 'snap {}: {}'.format(fn, e))
-        log('BOOT', 'healthy: Snapshot good/ ({} Dateien)'.format(cnt))
+        log('BOOT', 'healthy: snapshot good/ ({} files)'.format(cnt))
     except Exception as e:
         log('BOOT', 'healthy err {}'.format(e))
 
@@ -489,8 +489,8 @@ button:disabled{opacity:.4;cursor:not-allowed}
 }
 </style></head><body>
 <header>
- <div class="brand">OWON XDM1041 <span id="idn">verbinde…</span></div>
- <div class="hlinks"><span id="sps" class="sps">– S/s</span><a href="#" id="gear" title="Einstellungen">&#9881;</a><a href="/console">Console</a><a href="/ota">OTA</a><span id="conn" class="conn"></span></div>
+ <div class="brand">OWON XDM1041 <span id="idn">connecting…</span></div>
+ <div class="hlinks"><span id="sps" class="sps">– S/s</span><a href="#" id="gear" title="Settings">&#9881;</a><a href="/console">Console</a><a href="/ota">OTA</a><span id="conn" class="conn"></span></div>
 </header>
 <nav class="tabs" id="tabs"></nav>
 <div class="main">
@@ -515,50 +515,54 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <div class="grp"><h3>Trigger</h3><div class="seg" id="trig">
    <button data-t="auto" class="active">Auto</button><button data-t="single">Single</button></div>
    <button id="trigbtn" class="wide" disabled style="margin-top:8px">Trigger &#9658;</button></div>
-  <div class="grp"><h3>Anzeige</h3><button id="hold" class="wide hold">Hold</button></div>
+  <div class="grp"><h3>Display</h3><button id="hold" class="wide hold">Hold</button></div>
  </aside>
 </div>
 <div class="ovl" id="ovl"><div class="dlg">
- <div class="dlgtitle"><b>Einstellungen</b><span class="dlgx" id="ovlx">&#10005;</span></div>
- <div class="stabs"><button class="stab active" data-s="design">Design</button><button class="stab" data-s="display">Anzeige</button><button class="stab" data-s="network">Netzwerk</button><button class="stab" data-s="system">System</button></div>
+ <div class="dlgtitle"><b>Settings</b><span class="dlgx" id="ovlx">&#10005;</span></div>
+ <div class="stabs"><button class="stab active" data-s="design">Design</button><button class="stab" data-s="display">Display</button><button class="stab" data-s="network">Network</button><button class="stab" data-s="system">System</button></div>
  <div class="spane active" data-p="design">
   <div class="themerow" id="themerow"></div>
   <div class="colors" id="colors"></div>
   <div class="actions">
-   <button class="primary" id="saveTheme">Speichern</button>
-   <button id="resetTheme">Zuruecksetzen</button>
+   <button class="primary" id="saveTheme">Save</button>
+   <button id="resetTheme">Reset</button>
    <button id="expBtn">Export</button>
    <button id="impBtn">Import</button>
   </div>
-  <textarea class="io" id="io" placeholder="JSON hier einfuegen, dann Uebernehmen"></textarea>
-  <div class="actions" id="impActions" style="display:none"><button class="primary" id="impApply">Uebernehmen</button></div>
+  <textarea class="io" id="io" placeholder="Paste JSON here, then Apply"></textarea>
+  <div class="actions" id="impActions" style="display:none"><button class="primary" id="impApply">Apply</button></div>
  </div>
  <div class="spane" data-p="network">
   <div class="netgrid">
    <label>Hostname<input id="n_host" placeholder="owon"></label>
-   <label>Modus<select id="n_dhcp"><option value="1">DHCP (automatisch)</option><option value="0">Feste IP</option></select></label>
-   <label>IP-Adresse<input id="n_ip" placeholder="192.168.0.50"></label>
-   <label>Subnetzmaske<input id="n_mask" placeholder="255.255.255.0"></label>
+   <label>Mode<select id="n_dhcp"><option value="1">DHCP (automatic)</option><option value="0">Static IP</option></select></label>
+   <label>IP address<input id="n_ip" placeholder="192.168.0.50"></label>
+   <label>Subnet mask<input id="n_mask" placeholder="255.255.255.0"></label>
    <label>Gateway<input id="n_gw" placeholder="192.168.0.1"></label>
    <label>DNS<input id="n_dns" placeholder="192.168.0.1"></label>
   </div>
-  <div class="actions"><button id="netSave">Nur speichern</button><button class="primary" id="netReboot">Speichern &amp; Neustart (&uuml;bernehmen)</button></div>
+  <div class="actions"><button id="netSave">Save only</button><button class="primary" id="netReboot">Save &amp; Reboot (apply)</button></div>
   <p class="hint" id="netmsg"></p>
-  <p class="hint">Hostname wird im Router angezeigt; <b>owon.local</b> klappt je nach Router/Client. Feste IP ist garantiert &ndash; bitte eine freie Adresse au&szlig;erhalb des DHCP-Bereichs w&auml;hlen. &Auml;nderungen gelten nach Neustart.</p>
+  <p class="hint">The hostname shows up in your router; <b>owon.local</b> works depending on router/client. A static IP is guaranteed &ndash; pick a free address outside the DHCP range. Changes take effect after reboot.</p>
  </div>
  <div class="spane" data-p="display">
-  <div class="grp"><h3>Einheit</h3><div class="seg" id="umode">
-   <button data-u="range">Wie Ger&auml;t</button><button data-u="auto">Auto-Skalierung</button></div></div>
-  <p class="hint">&bdquo;Wie Ger&auml;t&ldquo;: Einheit folgt dem Messbereich (z.&nbsp;B. Bereich 5&nbsp;V &rarr; Anzeige in V) &ndash; wie das Multimeter-Display.<br>&bdquo;Auto-Skalierung&ldquo;: sch&ouml;nste Einheit je nach Wert (mV/V/kV &hellip;).</p>
+  <div class="grp"><h3>Unit</h3><div class="seg" id="umode">
+   <button data-u="range">Match meter</button><button data-u="auto">Auto-scale</button></div></div>
+  <p class="hint">&bdquo;Match meter&ldquo;: the unit follows the measurement range (e.g. 5&nbsp;V range &rarr; shown in V) &ndash; just like the multimeter display.<br>&bdquo;Auto-scale&ldquo;: nicest unit for the value (mV/V/kV &hellip;).</p>
  </div>
- <div class="spane" data-p="system"><div id="sysinfo" class="sysinfo">…</div></div>
+ <div class="spane" data-p="system"><div id="sysinfo" class="sysinfo">…</div>
+  <div class="grp" style="margin-top:18px"><h3>Maintenance</h3>
+   <button id="factoryBtn" class="wide" style="background:var(--bad);border-color:var(--bad);color:#fff">Factory reset</button></div>
+  <p class="hint">Erases WiFi &amp; network settings and reboots into the setup access point.</p>
+ </div>
 </div></div>
-<div class="wait" id="waitovl"><div><div class="sp"></div><h2 id="waitt">Neustart...</h2><p id="waitm"></p><a id="waitlink" href="#">&#246;ffnen</a></div></div>
+<div class="wait" id="waitovl"><div><div class="sp"></div><h2 id="waitt">Rebooting...</h2><p id="waitm"></p><a id="waitlink" href="#">open</a></div></div>
 <script>
 var CFG=__CFG__;
 function waitRedirect(url,title){
- el('waitt').textContent=title||'Neustart...';
- el('waitm').textContent='Warte, bis '+url+' erreichbar ist - dann automatische Weiterleitung.';
+ el('waitt').textContent=title||'Rebooting...';
+ el('waitm').textContent='Waiting for '+url+' to come up - then redirecting automatically.';
  var a=el('waitlink');a.href=url;a.textContent=url;
  el('waitovl').classList.add('show');
  setTimeout(function poll(){
@@ -610,7 +614,7 @@ function drawChart(){var c=el('spark');var w=c.width=c.clientWidth,h=c.height=c.
  for(var k=0;k<=M;k++){var fx=k/M,xx=PL+pw*fx;
   x.strokeStyle=CL;x.globalAlpha=.5;x.beginPath();x.moveTo(xx,PT);x.lineTo(xx,PT+ph);x.stroke();x.globalAlpha=1;
   var sec=(t1-(t0+span*fx))/1000;
-  x.fillStyle=CM;x.fillText(sec>0.5?('-'+sec.toFixed(0)+'s'):'jetzt',xx,PT+ph+4);}
+  x.fillStyle=CM;x.fillText(sec>0.5?('-'+sec.toFixed(0)+'s'):'now',xx,PT+ph+4);}
  // unit (top-left) + border
  x.textAlign='left';x.textBaseline='top';x.fillStyle=CM;x.fillText(fmt(mx,cur.g).u,3,PT-1);
  x.strokeStyle=CL;x.strokeRect(PL,PT,pw,ph);
@@ -630,7 +634,7 @@ async function reading(){try{var r=await fetch('/api/reading',{cache:'no-store'}
  el('conn').className='conn on';if(!hold)setReading(j);
  if(j.sps!==undefined)el('sps').textContent=j.sps+' S/s';
  el('modeline').textContent=(j.ok?'live':'stale')+(j.raw?(' · '+j.raw):'');
- }catch(e){el('conn').className='conn bad';el('modeline').textContent='ESP nicht erreichbar';}}
+ }catch(e){el('conn').className='conn bad';el('modeline').textContent='ESP unreachable';}}
 async function status(){try{var r=await fetch('/api/status',{cache:'no-store'});var j=await r.json();
  el('idn').textContent=j.idn||'';el('rangelbl').textContent=j.range||'–';curRange=j.range||'';
  var bs=el('rate').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-r')==j.rate);
@@ -648,7 +652,7 @@ el('hold').onclick=function(){hold=!hold;el('hold').classList.toggle('active',ho
 el('rstStat').onclick=resetStats;
 // ---- Themes / Settings ----
 var VARS=['bg','panel','panel2','line','mut','txt','acc','accb','ok','warn','bad'];
-var VLBL={bg:'Hintergrund',panel:'Panel',panel2:'Panel 2',line:'Linien',mut:'Sekundaer',txt:'Text',acc:'Akzent',accb:'Akzent 2',ok:'OK',warn:'Warnung',bad:'Fehler'};
+var VLBL={bg:'Background',panel:'Panel',panel2:'Panel 2',line:'Lines',mut:'Secondary',txt:'Text',acc:'Accent',accb:'Accent 2',ok:'OK',warn:'Warning',bad:'Error'};
 var THEMES={
  Midnight:{bg:'#0a0f1a',panel:'#121a2b',panel2:'#0e1626',line:'#243049',mut:'#64748b',txt:'#e2e8f0',acc:'#38bdf8',accb:'#2563eb',ok:'#22c55e',warn:'#f59e0b',bad:'#ef4444'},
  Carbon:{bg:'#0d0d0f',panel:'#17181c',panel2:'#121316',line:'#2a2c33',mut:'#7a7d87',txt:'#e7e7ea',acc:'#f59e0b',accb:'#d97706',ok:'#22c55e',warn:'#eab308',bad:'#ef4444'},
@@ -669,7 +673,7 @@ function buildColors(){var c=el('colors');c.innerHTML='';VARS.forEach(function(k
 function saveTheme(){try{localStorage.setItem('xdm_theme',themeName);localStorage.setItem('xdm_palette',JSON.stringify(palette));}catch(e){}}
 function resetTheme(){try{localStorage.removeItem('xdm_theme');localStorage.removeItem('xdm_palette');}catch(e){}setTheme('Midnight');}
 async function sysInfo(){try{var j=await(await fetch('/api/status',{cache:'no-store'})).json();
- el('sysinfo').innerHTML='Geraet: <b>'+j.idn+'</b><br>Firmware: <b>'+j.fw+'</b><br>Funktion: <b>'+j.function+'</b> · Rate: <b>'+j.rate+'</b> · Range: <b>'+j.range+'</b><br>Host: <b>'+location.host+'</b>';}catch(e){}}
+ el('sysinfo').innerHTML='Device: <b>'+j.idn+'</b><br>Firmware: <b>'+j.fw+'</b><br>Function: <b>'+j.function+'</b> · Rate: <b>'+j.rate+'</b> · Range: <b>'+j.range+'</b><br>Host: <b>'+location.host+'</b>';}catch(e){}}
 function applyUmode(){var bs=el('umode').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-u')==unitMode);}
 el('umode').onclick=function(e){var u=e.target.getAttribute('data-u');if(!u)return;unitMode=u;try{localStorage.setItem('xdm_unitmode',u);}catch(e){}applyUmode();};
 el('gear').onclick=function(e){e.preventDefault();el('ovl').classList.add('show');buildThemeRow();buildColors();sysInfo();loadNet();applyUmode();};
@@ -682,17 +686,22 @@ el('ovl').onclick=function(e){if(e.target===el('ovl'))el('ovl').classList.remove
 el('saveTheme').onclick=saveTheme;el('resetTheme').onclick=resetTheme;
 el('expBtn').onclick=function(){var io=el('io');io.style.display='block';io.value=JSON.stringify({theme:themeName,palette:palette});io.focus();io.select();el('impActions').style.display='none';};
 el('impBtn').onclick=function(){var io=el('io');io.style.display='block';io.value='';io.focus();el('impActions').style.display='flex';};
-el('impApply').onclick=function(){try{var o=JSON.parse(el('io').value);var p=o.palette||o;palette=p;themeName=o.theme||'Custom';applyPalette(palette);buildColors();buildThemeRow();saveTheme();el('io').style.display='none';el('impActions').style.display='none';}catch(e){alert('Ungueltiges JSON');}};
+el('impApply').onclick=function(){try{var o=JSON.parse(el('io').value);var p=o.palette||o;palette=p;themeName=o.theme||'Custom';applyPalette(palette);buildColors();buildThemeRow();saveTheme();el('io').style.display='none';el('impActions').style.display='none';}catch(e){alert('Invalid JSON');}};
+el('factoryBtn').onclick=function(){
+ if(!confirm('Factory reset: erase WiFi & network settings and reboot into the setup access point?'))return;
+ waitRedirect('http://192.168.4.1/','Factory reset - rebooting into setup AP');
+ el('waitm').textContent='Connect your device to WiFi "OWON-XDM-Remote-Setup", then open http://192.168.4.1';
+ fetch('/api/factory?confirm=1',{cache:'no-store'}).catch(function(){});};
 async function loadNet(){try{var j=await(await fetch('/api/net',{cache:'no-store'})).json();
  el('n_host').value=j.host||'';el('n_dhcp').value=String(j.dhcp);
  el('n_ip').value=j.ip||j.cur_ip||'';el('n_mask').value=j.mask||'';el('n_gw').value=j.gw||'';el('n_dns').value=j.dns||'';
- el('netmsg').textContent='Aktuelle IP: '+(j.cur_ip||'?');}catch(e){el('netmsg').textContent='Netz-Konfig nicht lesbar';}}
+ el('netmsg').textContent='Current IP: '+(j.cur_ip||'?');}catch(e){el('netmsg').textContent='Network config not readable';}}
 function netQ(){return 'host='+encodeURIComponent(el('n_host').value||'owon')+'&dhcp='+el('n_dhcp').value+'&ip='+encodeURIComponent(el('n_ip').value)+'&mask='+encodeURIComponent(el('n_mask').value)+'&gw='+encodeURIComponent(el('n_gw').value)+'&dns='+encodeURIComponent(el('n_dns').value);}
 async function netSave(rb){try{var r=await(await fetch('/api/net?'+netQ(),{cache:'no-store'})).json();
- if(!r.ok){el('netmsg').textContent='Fehler: '+(r.err||'?');return;}
- if(rb){var host=(el('n_host').value||'owon').trim();var url='http://'+host+'.local/';waitRedirect(url,'Uebernehmen & Neustart...');try{await fetch('/reboot',{method:'POST'});}catch(e){}}
- else el('netmsg').textContent='Gespeichert. Aktiv nach Neustart.';
-}catch(e){el('netmsg').textContent='Fehler: '+e;}}
+ if(!r.ok){el('netmsg').textContent='Error: '+(r.err||'?');return;}
+ if(rb){var host=(el('n_host').value||'owon').trim();var url='http://'+host+'.local/';waitRedirect(url,'Apply & reboot...');try{await fetch('/reboot',{method:'POST'});}catch(e){}}
+ else el('netmsg').textContent='Saved. Active after reboot.';
+}catch(e){el('netmsg').textContent='Error: '+e;}}
 el('netSave').onclick=function(){netSave(false);};
 el('netReboot').onclick=function(){netSave(true);};
 loadTheme();applyUmode();buildTabs();buildSubs();
@@ -760,6 +769,28 @@ def serve_net_set(cl, q):
         ota.send(cl, '{"ok":true}', "application/json")
     except Exception as e:
         ota.send(cl, '{{"ok":false,"err":"{}"}}'.format(e), "application/json", "500 Internal Server Error")
+
+
+def serve_factory(cl, q):
+    """Factory reset: erase WiFi + network config, then reboot into setup AP."""
+    if ota.qparam(q, 'confirm') != '1':
+        ota.send(cl, '{"ok":false,"err":"need confirm=1"}', "application/json", "400 Bad Request")
+        return
+    import os
+    import machine
+    for fn in ('wifi.dat', 'net.dat'):
+        try:
+            os.remove(fn)
+        except Exception:
+            pass
+    log('BOOT', 'factory reset -> reboot into setup AP')
+    ota.send(cl, '{"ok":true}', "application/json")
+    try:
+        cl.close()
+    except Exception:
+        pass
+    time.sleep_ms(400)
+    machine.reset()
 
 
 def serve_page(cl):
@@ -837,8 +868,8 @@ def serve_range(cl, q):
 
 
 def rpc(cmd):
-    """Schickt EINEN SCPI-Befehl über den Poller ans Meter (Lock-serialisiert,
-    damit Web /api/scpi und der SCPI-TCP-Server sich nicht in die Quere kommen)."""
+    """Send ONE SCPI command to the meter via the poller (lock-serialized so
+    web /api/scpi and the SCPI-TCP server don't collide on the UART)."""
     global _rpc_cmd
     if _rpc_lock:
         _rpc_lock.acquire()
@@ -865,8 +896,8 @@ def serve_scpi(cl, q):
 
 
 def scpi_server():
-    """Roher SCPI-TCP-Server auf Port 5025 fuer PyVISA (TCPIP::host::5025::SOCKET).
-    Zeilenbasiert ('<cmd>\\n'); endet der Befehl auf '?' -> Antwort, sonst Write."""
+    """Raw SCPI-TCP server on port 5025 for PyVISA (TCPIP::host::5025::SOCKET).
+    Line-based ('<cmd>\\n'); a command ending in '?' returns a reply, else write."""
     try:
         s = socket.socket()
         s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -892,7 +923,7 @@ def scpi_server():
                 try:
                     chunk = cl.recv(256)
                 except OSError as er:
-                    if er.args and er.args[0] == 116:   # ETIMEDOUT -> Verbindung offen halten
+                    if er.args and er.args[0] == 116:   # ETIMEDOUT -> keep connection open
                         continue
                     break
                 if not chunk:
@@ -954,6 +985,8 @@ def web_server(ip):
                     serve_net_set(cl, q)
                 else:
                     serve_net_get(cl)
+            elif path == '/api/factory':
+                serve_factory(cl, q)
             elif path in ('/api/scpi', '/cmd'):
                 serve_scpi(cl, q)
             else:

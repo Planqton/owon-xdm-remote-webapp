@@ -1,14 +1,14 @@
 #!/usr/bin/env bash
 #####################################################################################
-# OWON XDM1041 Remote – Flash- & OTA-Helfer (whiptail-TUI)
+# OWON XDM1041 Remote – flash & OTA helper (whiptail TUI)
 #
-#   Menü:
-#     1) Erstflash per USB  (MicroPython + alle Firmware-Dateien)
-#     2) OTA-Update         (Netzwerk; findet ALLE ESPs inkl. Recovery/AP-Modus,
-#                            mit Geräte-Auswahl bei mehreren)
-#     3) ESPs im Netzwerk suchen
+#   Menu:
+#     1) First flash via USB  (MicroPython + all firmware files)
+#     2) OTA update           (network; finds ALL ESPs incl. recovery/AP mode,
+#                              with device selection when there are several)
+#     3) Find ESPs on the network
 #
-#   Quelle der Firmware: ./firmware/   (neben diesem Skript)
+#   Firmware source: ./firmware/   (next to this script)
 #####################################################################################
 set -uo pipefail
 
@@ -18,9 +18,9 @@ PORT="${PORT:-/dev/ttyUSB0}"
 LAST_HOST_FILE="$SCRIPT_DIR/.owon_last_host"
 BT="OWON XDM1041 Remote"
 
-# App-Satz = OTA-sicher (good/-Snapshot, Auto-Rollback)
+# App set = OTA-safe (good/ snapshot, auto-rollback)
 APP_FILES=(dbg.py ota.py recovery.py wifi_manager.py app.py)
-# Bootloader/Trust-Root = nur per USB (nicht rollback-geschützt)
+# Bootloader / trust-root = USB only (not rollback-protected)
 CORE_FILES=(wd.py main.py)
 FILES=("${CORE_FILES[@]}" "${APP_FILES[@]}")
 
@@ -31,7 +31,7 @@ HAS_WT=0; command -v whiptail >/dev/null 2>&1 && HAS_WT=1
 
 DEVICES=()
 
-# ── UI-Helfer (whiptail; Text-Fallback falls nicht vorhanden) ─────────────────────
+# ── UI helpers (whiptail; text fallback if not present) ───────────────────────────
 ui_menu(){ local t="$1" p="$2"; shift 2
   if [ "$HAS_WT" = 1 ]; then
     whiptail --backtitle "$BT" --title "$t" --menu "$p" 20 76 12 "$@" 3>&1 1>&2 2>&3
@@ -45,14 +45,14 @@ ui_check(){ local t="$1" p="$2"; shift 2
     whiptail --backtitle "$BT" --title "$t" --checklist "$p" 20 76 12 "$@" 3>&1 1>&2 2>&3
   else
     { echo "== $t =="; } >&2; local out=""
-    while [ $# -ge 3 ]; do read -rp "$1 ? (j/N) " a >&2; [[ "${a:-}" =~ ^[jJ] ]] && out="$out \"$1\""; shift 3; done
+    while [ $# -ge 3 ]; do read -rp "$1 ? (y/N) " a >&2; [[ "${a:-}" =~ ^[yY] ]] && out="$out \"$1\""; shift 3; done
     echo "$out"
   fi
 }
 ui_msg(){ if [ "$HAS_WT" = 1 ]; then whiptail --backtitle "$BT" --title "$1" --msgbox "$2" 18 76
   else echo; echo "== $1 =="; echo -e "$2"; read -rp "[Enter]" _; fi; }
 ui_yesno(){ if [ "$HAS_WT" = 1 ]; then whiptail --backtitle "$BT" --title "$1" --yesno "$2" 14 76
-  else read -rp "$2 (j/N) " a; [[ "${a:-}" =~ ^[jJ] ]]; fi; }
+  else read -rp "$2 (y/N) " a; [[ "${a:-}" =~ ^[yY] ]]; fi; }
 
 mp(){ python3 -m mpremote connect "$PORT" "$@"; }
 
@@ -60,13 +60,13 @@ need_tools(){
   command -v python3 >/dev/null 2>&1 || return 1
   command -v curl    >/dev/null 2>&1 || return 1
   if ! python3 -m mpremote version >/dev/null 2>&1; then
-    echo "Installiere mpremote/esptool ..."
+    echo "Installing mpremote/esptool ..."
     python3 -m pip install --user --break-system-packages mpremote esptool >/dev/null 2>&1 \
       || python3 -m pip install mpremote esptool
   fi
 }
 
-# ── ESP-Erkennung (universell: /ota existiert in App, Recovery UND AP-Portal) ─────
+# ── ESP detection (universal: /ota exists in app, recovery AND AP portal) ─────────
 is_esp(){ curl -s --max-time "${2:-2}" "http://$1/ota" 2>/dev/null | grep -q "OTA Update"; }
 
 get_ip(){
@@ -99,7 +99,7 @@ collect_devices(){
   for h in "${cands[@]}"; do [ -n "$h" ] || continue
     if is_esp "$h" 2; then ip="$(get_ip "$h")"; case "$seen" in *" $ip "*) ;; *) DEVICES+=("$ip"); seen="$seen$ip ";; esac; fi
   done
-  base="$(subnet_base)"; echo "Scanne ${base}.1-254 ..."
+  base="$(subnet_base)"; echo "Scanning ${base}.1-254 ..."
   tmp="$(mktemp)"
   for n in $(seq 1 254); do ( is_esp "${base}.${n}" 1 && echo "${base}.${n}" >> "$tmp" ) & (( n % 50 == 0 )) && wait; done
   wait
@@ -108,30 +108,30 @@ collect_devices(){
 }
 
 flash_mpy(){
-  [ -f "$MPY_BIN" ] || { echo "Lade MicroPython v1.28.0 ..."; curl -fSL -o "$MPY_BIN" "$MPY_URL" || return 1; }
-  echo "Lösche Flash ..."; python3 -m esptool --port "$PORT" erase-flash || return 1
-  echo "Schreibe MicroPython @0x1000 ..."; python3 -m esptool --port "$PORT" --baud 460800 write-flash 0x1000 "$MPY_BIN" || return 1
+  [ -f "$MPY_BIN" ] || { echo "Downloading MicroPython v1.28.0 ..."; curl -fSL -o "$MPY_BIN" "$MPY_URL" || return 1; }
+  echo "Erasing flash ..."; python3 -m esptool --port "$PORT" erase-flash || return 1
+  echo "Writing MicroPython @0x1000 ..."; python3 -m esptool --port "$PORT" --baud 460800 write-flash 0x1000 "$MPY_BIN" || return 1
 }
 
-# ── 1) Erstflash per USB ─────────────────────────────────────────────────────────
+# ── 1) First flash via USB ────────────────────────────────────────────────────────
 usb_flash(){
-  need_tools || { ui_msg "Fehler" "python3 oder curl fehlt."; return; }
+  need_tools || { ui_msg "Error" "python3 or curl missing."; return; }
   if [ ! -e "$PORT" ]; then
-    ui_msg "USB" "Kein $PORT gefunden.\n\n- USB-Kabel an den ESP, OWON-5V/V_IN abziehen.\n- Anderer Port:  PORT=/dev/ttyUSB1 ./flash.sh"; return
+    ui_msg "USB" "No $PORT found.\n\n- Connect USB to the ESP, disconnect OWON 5V/V_IN.\n- Different port:  PORT=/dev/ttyUSB1 ./flash.sh"; return
   fi
-  ui_yesno "Erstflash per USB" "MicroPython (falls nötig) flashen und alle Firmware-Dateien auf $PORT spielen?\n\nWICHTIG: OWON-5V/V_IN abgezogen?" || return
-  clear; echo "### Erstflash per USB ($PORT) ###"
+  ui_yesno "First flash via USB" "Flash MicroPython (if needed) and upload all firmware files to $PORT?\n\nIMPORTANT: OWON 5V/V_IN disconnected?" || return
+  clear; echo "### First flash via USB ($PORT) ###"
   local doflash=0
   if mp exec "print(1)" >/dev/null 2>&1; then
-    ui_yesno "MicroPython" "MicroPython ist bereits drauf.\n\nNEU flashen?" && doflash=1
+    ui_yesno "MicroPython" "MicroPython is already installed.\n\nRe-flash it?" && doflash=1
   else doflash=1; fi
-  if [ "$doflash" = 1 ]; then clear; echo "### MicroPython flashen ###"; flash_mpy || { ui_msg "Fehler" "MicroPython-Flash fehlgeschlagen (siehe Terminal)."; return; }; sleep 2; fi
-  clear; echo "### Dateien hochladen ###"; local f okc=0
+  if [ "$doflash" = 1 ]; then clear; echo "### Flashing MicroPython ###"; flash_mpy || { ui_msg "Error" "MicroPython flash failed (see terminal)."; return; }; sleep 2; fi
+  clear; echo "### Uploading files ###"; local f okc=0
   for f in "${FILES[@]}"; do
-    [ -f "$FW_DIR/$f" ] || { echo "FEHLT: $f"; continue; }
-    mp fs cp "$FW_DIR/$f" ":$f" >/dev/null 2>&1 && { echo "  ok $f"; okc=$((okc+1)); } || echo "  FEHLER $f"
+    [ -f "$FW_DIR/$f" ] || { echo "MISSING: $f"; continue; }
+    mp fs cp "$FW_DIR/$f" ":$f" >/dev/null 2>&1 && { echo "  ok $f"; okc=$((okc+1)); } || echo "  ERROR $f"
   done
-  echo "good/-Snapshot anlegen ..."
+  echo "Creating good/ snapshot ..."
   mp exec "import os
 try:
     os.mkdir('good')
@@ -140,70 +140,70 @@ except Exception:
   for f in "${APP_FILES[@]}"; do mp fs cp "$FW_DIR/$f" ":good/$f" >/dev/null 2>&1; done
   mp exec "open('boot.cnt','w').write('0')" >/dev/null 2>&1
   mp exec "import machine;machine.reset()" >/dev/null 2>&1 || true
-  ui_msg "Fertig" "$okc/${#FILES[@]} Dateien geflasht + good/-Snapshot, Reset.\n\nNächster Schritt:\n  WLAN 'OWON-XDM-Remote-Setup' -> http://192.168.4.1\n  -> dein WLAN einrichten -> http://owon.local/"
+  ui_msg "Done" "$okc/${#FILES[@]} files flashed + good/ snapshot, reset.\n\nNext step:\n  WiFi 'OWON-XDM-Remote-Setup' -> http://192.168.4.1\n  -> set up your WiFi -> http://owon.local/"
 }
 
-# ── 2) OTA-Update ────────────────────────────────────────────────────────────────
+# ── 2) OTA update ─────────────────────────────────────────────────────────────────
 ota_update(){
-  need_tools || { ui_msg "Fehler" "python3 oder curl fehlt."; return; }
-  clear; echo "### Suche ESPs im Netzwerk ###"
+  need_tools || { ui_msg "Error" "python3 or curl missing."; return; }
+  clear; echo "### Searching for ESPs on the network ###"
   collect_devices
   local n="${#DEVICES[@]}" host d
-  if [ "$n" = 0 ]; then ui_msg "OTA" "Kein ESP gefunden.\n\n- eingeschaltet & im selben Netz?\n- im Setup-Modus: erst mit WLAN 'OWON-XDM-Remote-Setup' verbinden, dann erneut."; return; fi
-  if [ "$n" = 1 ]; then host="${DEVICES[0]}"; ui_yesno "1 Gerät gefunden" "$host\n[$(info_str "$host")]\n\nDieses Gerät verwenden?" || return
+  if [ "$n" = 0 ]; then ui_msg "OTA" "No ESP found.\n\n- powered on & on the same network?\n- in setup mode: connect to WiFi 'OWON-XDM-Remote-Setup' first, then retry."; return; fi
+  if [ "$n" = 1 ]; then host="${DEVICES[0]}"; ui_yesno "1 device found" "$host\n[$(info_str "$host")]\n\nUse this device?" || return
   else
     local args=(); for d in "${DEVICES[@]}"; do args+=("$d" "$(info_str "$d")"); done
-    host="$(ui_menu "Gerät auswählen ($n gefunden)" "Welcher ESP soll geflasht werden?" "${args[@]}")" || return
+    host="$(ui_menu "Select device ($n found)" "Which ESP should be flashed?" "${args[@]}")" || return
     [ -z "$host" ] && return
   fi
   echo "$host" > "$LAST_HOST_FILE"
   local choice sel=()
-  choice="$(ui_menu "Dateien" "Was auf $host hochladen?" \
-    "all"  "Kompletter App-Satz (empfohlen, OTA-sicher)" \
-    "app"  "Nur app.py" \
-    "pick" "Einzeln auswählen (App-Satz)" \
-    "core" "Bootloader main.py/wd.py (VORSICHT!)")" || return
+  choice="$(ui_menu "Files" "What to upload to $host?" \
+    "all"  "Complete app set (recommended, OTA-safe)" \
+    "app"  "app.py only" \
+    "pick" "Select individually (app set)" \
+    "core" "Bootloader main.py/wd.py (CAUTION!)")" || return
   case "$choice" in
     all) sel=("${APP_FILES[@]}");;
     app) sel=(app.py);;
     pick) local cargs=(); for d in "${APP_FILES[@]}"; do cargs+=("$d" "" off); done
-          local res; res="$(ui_check "Dateien wählen" "Leertaste = an/aus, Enter = OK" "${cargs[@]}")" || return
+          local res; res="$(ui_check "Select files" "Space = on/off, Enter = OK" "${cargs[@]}")" || return
           eval "sel=($res)";;
-    core) ui_yesno "VORSICHT – Bootloader" "main.py/wd.py sind der Trust-Root (Bootloader).\nEin kaputtes Update hier kann den ESP BRICKEN (nur per USB rettbar).\n\nWirklich per OTA flashen?" || return; sel=("${CORE_FILES[@]}");;
+    core) ui_yesno "CAUTION – bootloader" "main.py/wd.py are the trust root (bootloader).\nA broken update here can BRICK the ESP (recoverable only via USB).\n\nReally flash the bootloader over OTA?" || return; sel=("${CORE_FILES[@]}");;
     *) return;;
   esac
-  [ "${#sel[@]}" = 0 ] && { ui_msg "OTA" "Nichts ausgewählt."; return; }
-  clear; echo "### OTA-Upload -> $host ###"; local f r out="" fail=0
+  [ "${#sel[@]}" = 0 ] && { ui_msg "OTA" "Nothing selected."; return; }
+  clear; echo "### OTA upload -> $host ###"; local f r out="" fail=0
   for f in "${sel[@]}"; do
-    [ -f "$FW_DIR/$f" ] || { echo "FEHLT: $f"; out="$out\n  FEHLT $f"; fail=1; continue; }
+    [ -f "$FW_DIR/$f" ] || { echo "MISSING: $f"; out="$out\n  MISSING $f"; fail=1; continue; }
     printf "Upload %-18s " "$f ..."
     r="$(curl -s --max-time 90 -H "Expect:" -X POST --data-binary @"$FW_DIR/$f" "http://$host/upload?name=$f" 2>/dev/null)"
-    if echo "$r" | grep -q '"ok":true'; then echo "ok"; out="$out\n  ok  $f"; else echo "FEHLER"; out="$out\n  ERR $f (${r:-keine Antwort})"; fail=1; fi
+    if echo "$r" | grep -q '"ok":true'; then echo "ok"; out="$out\n  ok  $f"; else echo "ERROR"; out="$out\n  ERR $f (${r:-no response})"; fail=1; fi
   done
-  if ui_yesno "Neustart" "Uploads:$out\n\nJetzt neu starten (Update aktivieren)?"; then
+  if ui_yesno "Reboot" "Uploads:$out\n\nReboot now (apply the update)?"; then
     curl -s --max-time 4 -H "Expect:" -X POST "http://$host/reboot" >/dev/null 2>&1
-    ui_msg "Fertig" "Reboot gesendet. Gerät kommt in ~15 s zurück:\n  http://$host/"
+    ui_msg "Done" "Reboot sent. Device comes back in ~15 s:\n  http://$host/"
   else
-    ui_msg "Fertig" "Hochgeladen (erst nach Neustart aktiv):$out"
+    ui_msg "Done" "Uploaded (active after reboot):$out"
   fi
 }
 
-# ── 3) Suchen ────────────────────────────────────────────────────────────────────
+# ── 3) Find ──────────────────────────────────────────────────────────────────────
 do_scan(){
-  clear; echo "### Suche ESPs ###"; collect_devices
+  clear; echo "### Searching for ESPs ###"; collect_devices
   local d out=""
-  [ "${#DEVICES[@]}" = 0 ] && { ui_msg "Suche" "Keine ESPs gefunden."; return; }
+  [ "${#DEVICES[@]}" = 0 ] && { ui_msg "Search" "No ESPs found."; return; }
   for d in "${DEVICES[@]}"; do out="$out\n  $d   $(info_str "$d")"; done
-  ui_msg "Gefundene Geräte (${#DEVICES[@]})" "$out"
+  ui_msg "Devices found (${#DEVICES[@]})" "$out"
 }
 
-# ── Hauptmenü ────────────────────────────────────────────────────────────────────
+# ── Main menu ────────────────────────────────────────────────────────────────────
 while true; do
-  CH="$(ui_menu "Was möchtest du tun?" "OWON XDM1041 Remote – Flasher" \
-    "1" "Erstflash per USB  (MicroPython + alles)" \
-    "2" "OTA-Update         (Netzwerk, mit Auswahl)" \
-    "3" "ESPs im Netzwerk suchen" \
-    "4" "Beenden")" || exit 0
+  CH="$(ui_menu "What would you like to do?" "OWON XDM1041 Remote – Flasher" \
+    "1" "First flash via USB  (MicroPython + everything)" \
+    "2" "OTA update           (network, with selection)" \
+    "3" "Find ESPs on the network" \
+    "4" "Quit")" || exit 0
   case "${CH:-}" in
     1) usb_flash;;
     2) ota_update;;

@@ -1,47 +1,48 @@
 OWON XDM1041 Remote Bench
 =========================
 
-Dieses Projekt ist ein ABGELEITETES WERK (derivative work / Fork) von:
+This project is a DERIVATIVE WORK (fork) of:
 
     Elektroarzt/owon-xdm-remote
     https://github.com/Elektroarzt/owon-xdm-remote
-    Lizenz: GNU General Public License v3 (GPLv3)
+    License: GNU General Public License v3 (GPLv3)
 
-Da es auf diesem GPLv3-Projekt aufbaut, steht dieses Repository ebenfalls
-unter GPLv3 (siehe LICENSE). Bei Weitergabe/Veröffentlichung muss der
-Quellcode offen bleiben und die Urheber genannt werden.
-
-
-Übernommen / abgeleitet vom Original
-------------------------------------
-- wifi_manager.py
-    Ursprung: WiFiManager von Igor Ferreira (MIT-Lizenz, siehe Datei-Header),
-    modifiziert von Elektroarzt, hier weiter angepasst
-    (MQTT entfernt, Passwort-Bestätigung/„anzeigen", SSID-Refresh,
-     OTA im AP-Modus, Auto-Redirect, Watchdog-Fütterung).
-- SCPI-Startsequenz / UART-Handling in app.py
-    (Idle-Check, *IDN?-Handshake, "RATE F"-Schnellmodus, Logging-Idee)
-    stammt konzeptionell aus der main.py des Originals.
-- Hardware-Konzept & Verkabelung (OWON-UART <-> ESP) vom Original.
+Because it builds on that GPLv3 project, this repository is likewise
+licensed under GPLv3 (see LICENSE). When distributing/publishing, the
+source must stay open and the authors must be credited.
 
 
-Neu in dieser Variante (Eigenleistung)
---------------------------------------
-- Portierung von ESP32-C3 auf ESP32-WROOM (UART2 GPIO16/17).
-- Komplettes Web-Dashboard (app.py): Tabs/Untermodi, seitliche Toolbar,
-  Live-Graph mit Achsen, Min/Max/Avg, Themes (Export/Import), Anzeige-/
-  Netzwerk-Einstellungen, Einheiten-Modus.
-- JSON-REST-API unter /api.
-- OTA-System (ota.py): Streaming-Upload, Web-Konsole; OTA in ALLEN Modi
-  (App, Recovery, Setup-AP).
-- Ausfallsicherheit: Watchdog (wd.py), Boot-Zähler, Voll-Set Golden-Snapshot
-  Rollback (good/), Recovery-Server (recovery.py), Logging (dbg.py).
-- Robuster Launcher/Bootloader (main.py).
-- PyVISA/SCPI-TCP-Server (Port 5025), parallel zur Web-UI.
-- Werkzeuge: flash.sh (USB-Erstflash + OTA mit Geräte-Auswahl),
+Inherited / derived from the original
+-------------------------------------
+- firmware/wifi_manager.py
+    Origin: WiFiManager by Igor Ferreira (MIT license, see file header),
+    modified by Elektroarzt, further adapted here
+    (MQTT removed; password confirm/"show"; SSID refresh; OTA in AP mode;
+     auto-redirect; watchdog feeding).
+- SCPI startup sequence / UART handling in firmware/app.py
+    (idle check, *IDN? handshake, "RATE F" fast mode, logging idea)
+    conceptually originates from the original main.py.
+- Hardware concept & wiring (OWON UART <-> ESP), plus the KiCad PCB
+    (production/) and assets/, from the original.
+
+
+New in this variant (own work)
+------------------------------
+- Port from ESP32-C3 to ESP32-WROOM (UART2 GPIO16/17).
+- Complete web dashboard (app.py): tabs/sub-modes, side toolbar,
+  live graph with axes, min/max/avg, themes (export/import),
+  display/network settings, unit mode, factory reset.
+- JSON REST API under /api.
+- OTA system (ota.py): streaming upload, web console; OTA in ALL modes
+  (app, recovery, setup-AP).
+- Reliability: watchdog (wd.py), boot counter, full-set golden-snapshot
+  rollback (good/), recovery server (recovery.py), logging (dbg.py).
+- Robust launcher/bootloader (main.py).
+- PyVISA/SCPI-TCP server (port 5025), in parallel with the web UI.
+- Tools: flash.sh (USB first-flash + OTA with device selection),
   pyvisa_test.py.
 
-MQTT/Home-Assistant-Anbindung des Originals wird hier NICHT verwendet.
+The original's MQTT/Home Assistant integration is NOT used here.
 
 
-Danke an Elektroarzt und Igor Ferreira für die Vorarbeit.
+Thanks to Elektroarzt and Igor Ferreira for the groundwork.

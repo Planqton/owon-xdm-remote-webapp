@@ -140,7 +140,7 @@ def send(cl, body, ctype="text/html; charset=utf-8", status="200 OK"):
     _send_all(cl, body)
 
 
-_NAV = '<p style="margin-top:6px"><a class="lnk" href="/">&larr; Messseite</a> &nbsp; <a class="lnk" href="/ota">OTA</a> &nbsp; <a class="lnk" href="/console">Console</a></p>'
+_NAV = '<p style="margin-top:6px"><a class="lnk" href="/">&larr; Meter</a> &nbsp; <a class="lnk" href="/ota">OTA</a> &nbsp; <a class="lnk" href="/console">Console</a></p>'
 
 _CSS = """*{box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif;
 background:#0f172a;color:#e2e8f0;margin:0;padding:24px;display:flex;justify-content:center}
@@ -164,18 +164,18 @@ _OTA_PAGE = """<!DOCTYPE html><html><head><meta charset="utf-8">
 <h1>OTA Update</h1><div class="sub">{{SUB}}</div>
 <ul>{{FILES}}</ul>
 <input type="file" id="f">
-<button class="btn up" onclick="up()">Hochladen</button>
-<button class="btn rb" onclick="rb()">Neustart</button>
+<button class="btn up" onclick="up()">Upload</button>
+<button class="btn rb" onclick="rb()">Reboot</button>
 <div id="msg"></div>
 {{NAV}}
 <script>
 async function up(){var f=document.getElementById('f').files[0];
- if(!f){msg('Bitte eine Datei wählen.');return;}msg('Lade '+f.name+' hoch…');
+ if(!f){msg('Please choose a file.');return;}msg('Uploading '+f.name+'…');
  try{var r=await fetch('/upload?name='+encodeURIComponent(f.name),{method:'POST',body:f});var j=await r.json();
-  msg(j.ok?('OK: '+j.name+' ('+j.size+' B). Neustart drücken, um zu übernehmen.'):('Fehler: '+j.err));
+  msg(j.ok?('OK: '+j.name+' ('+j.size+' B). Press Reboot to apply.'):('Error: '+j.err));
   if(j.ok)setTimeout(function(){location.reload()},800);
- }catch(e){msg('Upload fehlgeschlagen: '+e);}}
-async function rb(){msg('Neustart…');try{await fetch('/reboot',{method:'POST'});}catch(e){}}
+ }catch(e){msg('Upload failed: '+e);}}
+async function rb(){msg('Rebooting…');try{await fetch('/reboot',{method:'POST'});}catch(e){}}
 function msg(t){document.getElementById('msg').textContent=t;}
 </script></div></body></html>"""
 
@@ -183,26 +183,26 @@ function msg(t){document.getElementById('msg').textContent=t;}
 _CONSOLE_PAGE = """<!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Console</title>
 <style>{{CSS}}</style></head><body><div class="card">
-<h1>Console</h1><div class="sub">Live-Log (RAM-Ringpuffer). Aktualisiert automatisch.</div>
+<h1>Console</h1><div class="sub">Live log (RAM ring buffer). Auto-refreshing.</div>
 <pre id="log">…</pre>
-<button class="btn cl" onclick="clr()">Leeren</button>
-<button class="btn rb" onclick="rb()">Neustart</button>
+<button class="btn cl" onclick="clr()">Clear</button>
+<button class="btn rb" onclick="rb()">Reboot</button>
 <label style="font-size:13px;color:#94a3b8;margin-left:10px"><input type="checkbox" id="auto" checked> Auto-Scroll</label>
 {{NAV}}
 <script>
 var pre=document.getElementById('log');
 async function upd(){try{var r=await fetch('/log',{cache:'no-store'});var t=await r.text();
  var atBottom=pre.scrollTop+pre.clientHeight>=pre.scrollHeight-20;
- pre.textContent=t||'(leer)';
+ pre.textContent=t||'(empty)';
  if(document.getElementById('auto').checked||atBottom)pre.scrollTop=pre.scrollHeight;
- }catch(e){pre.textContent='Console nicht erreichbar: '+e;}}
+ }catch(e){pre.textContent='Console unreachable: '+e;}}
 async function clr(){try{await fetch('/logclear',{method:'POST'});upd();}catch(e){}}
 async function rb(){try{await fetch('/reboot',{method:'POST'});}catch(e){}}
 setInterval(upd,1000);upd();
 </script></div></body></html>"""
 
 
-def page(cl, sub="Datei auswählen und hochladen, dann Neustart.", note=""):
+def page(cl, sub="Choose a file and upload, then reboot.", note=""):
     rows = "".join("<li>{} <span>{} B</span></li>".format(n, s) for n, s in list_files())
     html = (_OTA_PAGE.replace("{{CSS}}", _CSS).replace("{{FILES}}", rows)
             .replace("{{SUB}}", sub).replace("{{NAV}}", _NAV))

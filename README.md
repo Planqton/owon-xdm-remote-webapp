@@ -1,206 +1,194 @@
 # OWON XDM1041 Remote Bench 🌡️🔌
 
-WLAN-Fernbedienung & Web-Oberfläche für das **OWON XDM1041** Tischmultimeter auf Basis eines **ESP32-WROOM** – mit professionellem Browser-Dashboard, Live-Graph, OTA-Updates, Web-Konsole und **brick-sicherer Selbstheilung**.
+WiFi remote & web interface for the **OWON XDM1041** bench multimeter, running on an **ESP32-WROOM** (MicroPython) — with a professional browser dashboard, live graph, OTA updates, web console, a PyVISA/SCPI server, and **brick-proof self-healing**.
 
-> **Abgeleitetes Werk (Fork/Derivative) von [Elektroarzt/owon-xdm-remote](https://github.com/Elektroarzt/owon-xdm-remote) – lizenziert unter GPLv3.**
-> Das Original (ESP32-C3 + MQTT) war die Basis: `wifi_manager.py` stammt von dort (Igor Ferreira, mod. Elektroarzt), die SCPI-Startsequenz ebenfalls. Diese Variante läuft auf einem klassischen **ESP32-WROOM**, **ohne MQTT/Home Assistant** – stattdessen eine eigenständige Web-App, OTA, Watchdog/Rollback und ein PyVISA-SCPI-Server. Details in [`NOTICE`](NOTICE).
+> **Derivative work / fork of [Elektroarzt/owon-xdm-remote](https://github.com/Elektroarzt/owon-xdm-remote) — licensed under GPLv3.**
+> The original (ESP32-C3 + MQTT) was the basis: `firmware/wifi_manager.py` comes from there (Igor Ferreira, mod. Elektroarzt), as does the SCPI startup handshake. This variant runs on a classic **ESP32-WROOM**, **without MQTT/Home Assistant** — instead a standalone web app, OTA, watchdog/rollback and a PyVISA SCPI server. See [`NOTICE`](NOTICE).
 
-<!-- ![Screenshot](docs/screenshot.png) -->
-> 📷 _Screenshot:_ `docs/screenshot.png` einfügen (Dashboard mit Tabs, Live-Wert, Graph & seitlicher Toolbar).
+![Dashboard](docs/screenshot.png)
 
 ---
 
 ## ✨ Features
 
-- **Volles Browser-Dashboard** – nutzt das ganze Fenster, dunkles Instrument-Design, responsiv (eigenes Handy-Layout).
-- **Alle Messmodi** als Tabs: **V** (DC/AC), **A** (DC/AC), **Ω** (Widerstand/Durchgang/Diode), **Kapazität**, **Frequenz**, **Temperatur**.
-- **Seitliche Toolbar**: Sampling-Rate (Low/Mid/High), Range (Auto / manuell ▲▼), Trigger (Auto/Single), Hold.
-- **Live-Graph mit Achsen** (Werte- & Zeitachse), **Min/Max/Avg**, und eine **„FPS"-Anzeige** der echten Messrate (Samples/s).
-- **Auto-Einheiten** (mV/V/kV, µA/mA/A, Ω/kΩ/MΩ, pF/nF/µF, Hz/kHz/MHz, °C) + **„OL"** bei Überlauf.
-- **Einstellungen** im Browser: **3 Themes** (Midnight/Carbon/Hell) + frei anpassbare Farben mit **Export/Import**, **Netzwerk** (Hostname, DHCP/feste IP), **System-Info**.
-- **OTA-Updates** über WLAN – funktioniert in **allen** Zuständen (Normalbetrieb, Recovery, Setup-AP).
-- **Web-Konsole** (`/console`) – Live-Log im Browser, inkl. Absturz-Traceback. Kein USB zum Debuggen nötig.
-- **Brick-sicher**: Watchdog + Boot-Zähler + **automatischer Rollback** auf die letzte funktionierende Version.
-- **mDNS**: erreichbar unter **`http://owon.local/`** – keine IP-Sucherei.
-- **Captive-Portal** zum WLAN-Einrichten, mit Passwort-Bestätigung, „Passwort anzeigen" und SSID-Refresh; leitet nach dem Setup automatisch auf `owon.local` weiter.
+- **Full-window browser dashboard** — uses the whole window, dark instrument theme, responsive (its own phone layout).
+- **All measurement modes** as tabs: **V** (DC/AC), **A** (DC/AC), **Ω** (resistance / continuity / diode), **capacitance**, **frequency**, **temperature**.
+- **Side toolbar**: sampling rate (Low/Mid/High), range (auto / manual ▲▼), trigger (auto/single), hold.
+- **Live graph with axes** (value & time axis), **min/max/avg**, and an **"FPS-like" sample-rate readout** (samples/s).
+- **Unit display**: "match meter" (unit follows the range, like the display) or auto-scale (mV/V/kV, µA/mA/A, Ω/kΩ/MΩ, pF/nF/µF, Hz/kHz/MHz, °C); **"OL"** on overload.
+- **Settings** in the browser: **3 themes** (Midnight/Carbon/Light) + fully customizable colors with **export/import**, **network** (hostname, DHCP/static IP), **display** (unit mode), **system** info + **Factory reset**.
+- **OTA updates** over WiFi — works in **every** state (app, recovery, setup-AP).
+- **Web console** (`/console`) — live log in the browser, including crash traceback. No USB needed for debugging.
+- **PyVISA / SCPI server** (port 5025) in parallel with the web UI.
+- **Brick-proof**: hardware watchdog + boot counter + full-set "golden snapshot" auto-rollback.
+- **mDNS** (`owon.local`), captive-portal WiFi setup with auto-redirect.
 
 ---
 
-## 🔌 Hardware & Verkabelung
+## 🔌 Hardware & wiring
 
-| Teil | Wert |
+| Part | Value |
 |---|---|
-| MCU | ESP32-WROOM-32 (ESP32-D0WD-V3, 4 MB Flash) |
-| Multimeter | OWON XDM1041 |
+| MCU | ESP32-WROOM-32 (ESP32-D0WD-V3, 4 MB flash) |
+| Meter | OWON XDM1041 |
 | Firmware | MicroPython 1.28.0 (ESP32_GENERIC) |
 
-Die originale interne UART/USB-Platine im OWON abziehen, den ESP an denselben Stecker (J3). **Über Kreuz** verdrahten, **3,3 V Logik – kein Pegelwandler nötig**:
+Remove the original internal UART/USB board inside the OWON and connect the ESP to the same header (J3). Wire **crossed over**, **3.3 V logic — no level shifter needed**:
 
 | OWON (J1) | → | ESP32-WROOM |
 |---|---|---|
-| **TXD** (OWON sendet) | → | **GPIO16** (ESP RX) |
-| **RxD** (OWON empfängt) | → | **GPIO17** (ESP TX) |
+| **TXD** (OWON transmits) | → | **GPIO16** (ESP RX) |
+| **RxD** (OWON receives) | → | **GPIO17** (ESP TX) |
 | **V_IN** (5 V) | → | **VIN / 5V** |
 | **GND** | → | **GND** |
 
-> ⚠️ **Nicht** gleichzeitig OWON-5V (V_IN) **und** ESP-USB einspeisen (keine Schutzdiode). Zum Flashen via USB die V_IN-Leitung abziehen. Im Betrieb: nur OWON-5V.
+> ⚠️ Do **not** feed OWON 5 V (V_IN) **and** ESP USB at the same time (no protection diode). When flashing over USB, disconnect the V_IN line. In normal operation: OWON 5 V only.
+
+KiCad PCB and assets are in `production/` and `assets/` (from upstream — same hardware).
 
 ---
 
-## ⚡ Schnellstart
+## ⚡ Quick start
 
-Alles läuft über das interaktive Helfer-Skript **`flash.sh`**:
+Everything runs through the interactive helper **`flash.sh`** (whiptail TUI):
 
 ```bash
 ./flash.sh
 ```
 
-```
-=============================================
-   OWON XDM1041 Remote – Flasher
-=============================================
-  1) Erstflash per USB  (MicroPython + alles)
-  2) OTA-Update         (Netzwerk, auch Recovery)
-  3) ESP im Netzwerk suchen
-  4) Beenden
-```
+### 1. First setup (over USB)
+1. Connect the ESP over USB (disconnect OWON 5 V / V_IN).
+2. `./flash.sh` → **First flash via USB**.
+   - Installs `esptool`/`mpremote` if needed, flashes MicroPython and uploads all firmware files (incl. the rollback baseline in `good/`).
+3. Then: join the open WiFi **`OWON-XDM-Remote-Setup`**, open **`http://192.168.4.1`**, enter your WiFi.
+4. The page auto-redirects to **`http://owon.local/`**. Done. 🎉
 
-### 1. Erstinbetriebnahme (per USB)
-1. ESP per USB anschließen (OWON-5V/V_IN abziehen).
-2. `./flash.sh` → **1) Erstflash per USB**.
-   - Installiert bei Bedarf `esptool`/`mpremote`, flasht MicroPython und lädt alle Firmware-Dateien hoch (inkl. Rollback-Basis `app_good.py`).
-3. Danach: am Handy/PC ins offene WLAN **`OWON-XDM-Remote-Setup`**, **`http://192.168.4.1`** öffnen → dein WLAN eintragen.
-4. Die Seite leitet automatisch weiter auf **`http://owon.local/`**. Fertig. 🎉
-
-### 2. Updates (per OTA, ohne USB)
-1. `./flash.sh` → **2) OTA-Update**.
-   - Findet **alle** ESPs im Netz (mDNS + Subnetz-Scan) – **auch im Recovery-/AP-Modus** nach einem abgebrochenen Update.
-   - Bei **mehreren Geräten** erscheint eine **Auswahl-Liste** (IP, Modus, Hostname, Seriennummer), damit du das richtige erwischst.
-2. Dateien auswählen (alle / nur `app.py` / einzeln) → Upload → Neustart.
+### 2. Updates (over OTA, no USB)
+1. `./flash.sh` → **OTA update**.
+   - Finds **all** ESPs on the network (mDNS + subnet scan) — even in recovery/AP mode after an aborted update.
+   - With **multiple devices** you get a **selection list** (IP, mode, hostname, serial) so you pick the right one.
+2. Choose files (all / app.py only / individual) → upload → reboot.
 
 ---
 
-## 🖥️ Bedienung
+## 🖥️ Usage
 
-Browser auf **`http://owon.local/`** (bzw. deinen Hostnamen). 
+Open **`http://owon.local/`** (or your hostname).
 
-- **Tabs oben**: Messfunktion wählen, darunter die Untermodi.
-- **Toolbar rechts**: Sampling, Range, Trigger, Hold.
-- **Zahnrad** (oben rechts): Einstellungen (Design, Netzwerk, System).
-- **Log** / **OTA**: Web-Konsole bzw. Update-Seite.
+- **Tabs at the top**: pick the measurement function, sub-modes underneath.
+- **Toolbar on the right**: sampling, range, trigger, hold.
+- **Gear** (top right): settings (Design, Display, Network, System).
+- **Log** / **OTA**: web console and update page.
 
 ---
 
 ## 🌐 Hostname / mDNS
 
-- Standard: **`owon.local`**. Änderbar unter **Einstellungen → Netzwerk → Hostname** → **„Speichern & Neustart"** (gilt erst nach Reboot). Die Seite leitet automatisch auf den neuen Namen weiter.
-- Das **`.local`** ist fix (mDNS). `owon.me`/`.com` o. ä. sind nicht möglich.
-- Alternativ feste IP einstellbar (sonst DHCP). Im Zweifel ist das Gerät immer über seine IP erreichbar.
+- Default: **`owon.local`**. Change it under **Settings → Network → Hostname** → **"Save & Reboot"** (takes effect after a reboot). The page auto-redirects to the new name.
+- The **`.local`** suffix is fixed (mDNS). `owon.me`/`.com` etc. are not possible.
+- A static IP is also configurable (otherwise DHCP). Worst case the device is always reachable by its IP.
 
 ---
 
-## 🛡️ Ausfallsicherheit (brick-sicher)
+## 🛡️ Reliability (brick-proof)
 
-Ein kaputtes Update – Crash, Syntaxfehler **oder Totalhänger** – repariert sich **selbst, ohne USB** (Prinzip wie A/B beim Handy):
+A bad update — crash, syntax error **or full hang** — self-heals **without USB** (A/B style):
 
-1. **Watchdog** (früh in `main.py` scharf, in allen Schleifen gefüttert): Hänger → Reset.
-2. **Boot-Zähler** zählt Fehlstarts.
-3. **Self-Confirm**: nach ~14 s stabilem Lauf sichert die App den **kompletten App-Satz** als bekannt-guten Snapshot nach **`good/`** und nullt die Zähler.
-4. **Voll-Set Auto-Rollback**: nach 4 Fehlboots stellt `main.py` den **ganzen `good/`-Satz** wieder her und **bootet automatisch zurück in die reparierte App** (Schleifen-Schutz: nach 2 erfolglosen Versuchen → Recovery).
+1. **Watchdog** (armed early in `main.py`, fed in every loop): a hang → reset.
+2. **Boot counter** counts failed boots.
+3. **Self-confirm**: after ~14 s of stable running the app saves the **entire app set** as a known-good snapshot in **`good/`** and clears the counters.
+4. **Full-set auto-rollback**: after 4 failed boots, `main.py` restores the **whole `good/` set** and **reboots straight back into the repaired app** (loop guard: after 2 unsuccessful attempts → recovery).
 
-> **Trust-Root** sind nur `main.py` + `wd.py` (winzig, stabil) – die werden **per USB** aktualisiert (wie ein Bootloader). Alles andere ist via `good/` selbstheilend.
-> Getestet: kaputtes `ota.py` (legt App **und** Recovery lahm) per OTA → in ~35 s vollautomatisch zurück in die normale App, ohne USB. ✅
+> **Trust root** is only `main.py` + `wd.py` (tiny, stable) — these are updated via USB (like a bootloader). Everything else self-heals via `good/`.
+> Tested: a broken `ota.py` (kills app **and** recovery) pushed over OTA → back to the normal app in ~35 s, fully automatic, no USB. ✅
 >
-> Zum USB-Debuggen den Watchdog deaktivieren: Datei `nowdt` auf dem ESP anlegen, danach löschen.
+> To disable the watchdog for USB debugging, create a `nowdt` file on the ESP, then delete it.
 
 ---
 
-## 🔧 HTTP-API
+## 🔧 HTTP API
 
-| Route | Zweck |
+| Route | Purpose |
 |---|---|
-| `GET /api/reading` | aktueller Messwert `{ok,value,raw,age,sps}` |
-| `GET /api/status` | voller Zustand (Funktion, Rate, Range, IDN …) |
-| `GET /api/function?set=VDC\|VAC\|ADC\|AAC\|RES\|CONT\|DIOD\|CAP\|FREQ\|TEMP` | Funktion wählen |
-| `GET /api/rate?set=S\|M\|F` | Sampling Low/Mid/High |
-| `GET /api/range?set=auto\|up\|down` | Messbereich |
-| `GET /api/net` · `?host=&dhcp=&ip=&mask=&gw=&dns=` | Netzwerk lesen/setzen |
-| `GET /api/scpi?cmd=...` | beliebiges SCPI (Debug) |
+| `GET /api/reading` | current reading `{ok,value,raw,age,sps}` |
+| `GET /api/status` | full state (function, rate, range, IDN …) |
+| `GET /api/function?set=VDC\|VAC\|ADC\|AAC\|RES\|CONT\|DIOD\|CAP\|FREQ\|TEMP` | switch function |
+| `GET /api/rate?set=S\|M\|F` | sampling Low/Mid/High |
+| `GET /api/range?set=auto\|up\|down` | range |
+| `GET /api/net` · `?host=&dhcp=&ip=&mask=&gw=&dns=` | network read/set |
+| `GET /api/factory?confirm=1` | factory reset (wipe WiFi+network, reboot to setup AP) |
+| `GET /api/scpi?cmd=...` | arbitrary SCPI (debug) |
 | `POST /upload?name=X` · `GET /ota` · `POST /reboot` | OTA |
-| `GET /console` · `GET /log` · `POST /logclear` | Web-Konsole |
+| `GET /console` · `GET /log` · `POST /logclear` | web console |
 
 ---
 
-## 🧪 PyVISA / SCPI über Netzwerk (Port 5025)
+## 🧪 PyVISA / SCPI over the network (port 5025)
 
-Der ESP stellt **parallel zur Web-Oberfläche** einen rohen SCPI-TCP-Server bereit – dein OWON wird damit zum **netzwerkfähigen Messgerät** für PyVISA/LabVIEW/Python-Scripts.
+The ESP runs a raw SCPI-TCP server **in parallel with the web UI** — your OWON becomes a network-capable instrument for PyVISA/LabVIEW/Python scripts.
 
-Installation (PC, reines Python-Backend, kein NI-VISA nötig):
+Install (PC, pure-Python backend, no NI-VISA needed):
 ```bash
 python3 -m pip install --user --break-system-packages pyvisa pyvisa-py
 ```
-Benutzung:
+Usage:
 ```python
 import pyvisa
 rm = pyvisa.ResourceManager('@py')
-inst = rm.open_resource('TCPIP::owon1.local::5025::SOCKET')
+inst = rm.open_resource('TCPIP::owon.local::5025::SOCKET')
 inst.read_termination = '\n'; inst.write_termination = '\n'; inst.timeout = 3000
 print(inst.query('*IDN?'))      # OWON,XDM1041,...
-print(inst.query('MEAS?'))      # aktueller Wert
-inst.write('CONF:VOLT:AC')      # Funktion umstellen
+print(inst.query('MEAS?'))      # current value
+inst.write('CONF:VOLT:AC')      # switch function
 ```
-Web-UI und PyVISA laufen **gleichzeitig** (beide gehen über den einen Poller ans Meter, per Lock serialisiert). Zeilenprotokoll: `<cmd>\n`; endet der Befehl auf `?` → Antwort, sonst Write.
-
-## 📟 SCPI-Referenz (XDM1041, verifiziert)
-
-| Zweck | Befehl |
-|---|---|
-| Messwert | `MEAS?` (≈3–5/s; `1E+9` = Overload) |
-| Funktion | `CONF:VOLT:DC` · `CONF:VOLT:AC` · `CONF:CURR:DC` · `CONF:CURR:AC` · `CONF:RES` · `CONF:CONT` · `CONF:DIOD` · `CONF:CAP` · `CONF:FREQ` · `CONF:TEMP` |
-| aktive Funktion | `FUNC?` |
-| Sampling | `RATE S\|M\|F` · `RATE?` |
-| Range | `RANGE 1..6` (manuell) · `AUTO 1` (Autorange) · `RANGE?` · `AUTO?` |
-
-> Hinweis: `VAL1?`/`FETC?` werden nicht unterstützt. Es gibt **kein** SCPI zum Aus-/Neustarten des OWON.
+Web UI and PyVISA run **at the same time** (both go through the single poller, serialized with a lock). Line protocol: `<cmd>\n`; commands ending in `?` return a reply, others are writes. See `pyvisa_test.py`.
 
 ---
 
-## 🗂️ Projektstruktur
+## 📟 SCPI reference (XDM1041, verified)
+
+| Purpose | Command |
+|---|---|
+| Reading | `MEAS?` (≈3–5/s; `1E+9` = overload) |
+| Function | `CONF:VOLT:DC` · `CONF:VOLT:AC` · `CONF:CURR:DC` · `CONF:CURR:AC` · `CONF:RES` · `CONF:CONT` · `CONF:DIOD` · `CONF:CAP` · `CONF:FREQ` · `CONF:TEMP` |
+| Active function | `FUNC?` |
+| Sampling | `RATE S\|M\|F` · `RATE?` |
+| Range | `RANGE 1..6` (manual) · `AUTO 1` (autorange) · `RANGE?` · `AUTO?` |
+
+> Note: `VAL1?`/`FETC?` are not supported. There is **no** SCPI command to power/reboot the OWON.
+
+---
+
+## 🗂️ Project layout
 
 ```
 .
-├── flash.sh              # Interaktiver Flasher (USB-Erstflash + OTA)
-├── pyvisa_test.py        # PyVISA-Testscript (SCPI über Port 5025)
+├── flash.sh              # Interactive flasher (USB first-flash + OTA)
+├── pyvisa_test.py        # PyVISA test script (SCPI over port 5025)
 ├── README.md
-├── CLAUDE.md             # Ausführliche Entwickler-/Projektnotizen
 ├── LICENSE               # GPLv3
-├── NOTICE                # Credits / übernommen vs. neu
-└── firmware/             # MicroPython-Quellcode (= das, was auf den ESP kommt)
-    ├── main.py           # Launcher: Watchdog-Arm, Boot-Zähler, Auto-Rollback
-    ├── app.py            # Web-App: UI, /api, Poller, Themes, Netzwerk
-    ├── wifi_manager.py   # WLAN-Setup (Captive Portal) + OTA im AP-Modus
-    ├── ota.py            # OTA-Upload (Streaming) + Web-Konsole
-    ├── recovery.py       # Notfall-Server (WLAN + OTA + Konsole)
-    ├── dbg.py            # Logging (seriell + RAM-Ring für /console)
-    └── wd.py             # Hardware-Watchdog (gemeinsam)
+├── NOTICE                # Credits / inherited vs new
+├── docs/screenshot.png
+├── production/           # KiCad PCB (from upstream)
+├── assets/               # images (from upstream)
+└── firmware/             # MicroPython source (what runs on the ESP)
+    ├── main.py           # Launcher: watchdog, boot counter, auto-rollback
+    ├── app.py            # Web app: UI, /api, poller, themes, network, SCPI server
+    ├── wifi_manager.py   # WiFi setup (captive portal) + OTA in AP mode
+    ├── ota.py            # OTA upload (streaming) + web console
+    ├── recovery.py       # Recovery server (WiFi + OTA + console)
+    ├── dbg.py            # Logging (serial + RAM ring for /console)
+    └── wd.py             # Hardware watchdog (shared)
 ```
 
 ---
 
-## ⚠️ Hinweise
+## 📜 Credits & license
 
-- Messrate ist hardwareseitig auf **~3–5 Messungen/s** begrenzt (OWON Fast-Mode).
-- Bei großen Uploads `curl` immer mit `-H "Expect:"` aufrufen (macht `flash.sh` automatisch).
-- Feste IP nur außerhalb des DHCP-Bereichs wählen.
+This project is a **derivative work** of **[Elektroarzt/owon-xdm-remote](https://github.com/Elektroarzt/owon-xdm-remote)** and is therefore — like the original — licensed under the **GNU General Public License v3 (GPLv3)**, see [`LICENSE`](LICENSE).
 
----
+- **Original & basis:** Elektroarzt/owon-xdm-remote (hardware concept, `wifi_manager.py`, SCPI startup handshake).
+- `wifi_manager.py`: WiFiManager by **Igor Ferreira** (MIT), modified by Elektroarzt and extended here.
+- **New in this variant:** ESP32-WROOM port, full web app/REST API, OTA + recovery + watchdog + full-set rollback, PyVISA SCPI server, `flash.sh`, `pyvisa_test.py`.
 
-## 📜 Credits & Lizenz
-
-Dieses Projekt ist ein **abgeleitetes Werk** von **[Elektroarzt/owon-xdm-remote](https://github.com/Elektroarzt/owon-xdm-remote)** und steht daher – wie das Original – unter der **GNU General Public License v3 (GPLv3)**, siehe [`LICENSE`](LICENSE).
-
-- **Original & Basis:** Elektroarzt/owon-xdm-remote (Hardware-Konzept, `wifi_manager.py`, SCPI-Startsequenz).
-- `wifi_manager.py`: WiFiManager von **Igor Ferreira** (MIT), modifiziert von Elektroarzt und hier weiter angepasst.
-- **Neu in dieser Variante:** ESP32-WROOM-Port, komplette Web-App/REST-API, OTA + Recovery + Watchdog + Voll-Set-Rollback, PyVISA-SCPI-Server, `flash.sh`, `pyvisa_test.py`.
-
-Genaue Aufschlüsselung „übernommen vs. neu" in [`NOTICE`](NOTICE). Bei Weitergabe/Veröffentlichung: GPLv3 einhalten (Quelloffen + Namensnennung).
+Detailed "inherited vs new" breakdown in [`NOTICE`](NOTICE). When distributing/publishing: comply with GPLv3 (open source + attribution).

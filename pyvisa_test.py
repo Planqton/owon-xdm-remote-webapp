@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
 """
-PyVISA-Test für den OWON XDM1041 Remote (SCPI-TCP-Server auf Port 5025).
+PyVISA test for the OWON XDM1041 Remote (SCPI-TCP server on port 5025).
 
-Aufruf:
-    ./pyvisa_test.py                 # Standard-Host owon.local
-    ./pyvisa_test.py owon.local      # anderer Hostname
-    ./pyvisa_test.py 192.168.0.85    # direkte IP
-    ./pyvisa_test.py owon.local --switch   # zusätzlich Schreib-Demo (Funktion umschalten)
+Usage:
+    ./pyvisa_test.py                 # default host owon.local
+    ./pyvisa_test.py owon.local      # another hostname
+    ./pyvisa_test.py 192.168.0.85    # direct IP
+    ./pyvisa_test.py owon.local --switch   # also run a write demo (switch function)
 
-Installation (PC):
+Install (PC):
     python3 -m pip install --user --break-system-packages pyvisa pyvisa-py
 """
 import sys
@@ -21,20 +21,20 @@ DO_SWITCH = '--switch' in sys.argv
 try:
     import pyvisa
 except ImportError:
-    print("PyVISA ist nicht installiert. Installieren mit:")
+    print("PyVISA is not installed. Install with:")
     print("  python3 -m pip install --user --break-system-packages pyvisa pyvisa-py")
     sys.exit(1)
 
 resource = 'TCPIP::{}::{}::SOCKET'.format(HOST, PORT)
-print("Verbinde mit {} ...".format(resource))
+print("Connecting to {} ...".format(resource))
 
-rm = pyvisa.ResourceManager('@py')   # '@py' = reines pyvisa-py-Backend (kein NI-VISA noetig)
+rm = pyvisa.ResourceManager('@py')   # '@py' = pure pyvisa-py backend (no NI-VISA needed)
 try:
     inst = rm.open_resource(resource)
 except Exception as e:
-    print("FEHLER: Verbindung fehlgeschlagen:", e)
-    print("  - ESP eingeschaltet und im selben Netz?")
-    print("  - Hostname/IP korrekt? Aufruf z. B.:  ./pyvisa_test.py 192.168.0.85")
+    print("ERROR: connection failed:", e)
+    print("  - ESP powered on and on the same network?")
+    print("  - hostname/IP correct? e.g.:  ./pyvisa_test.py 192.168.0.85")
     sys.exit(1)
 
 inst.read_termination = '\n'
@@ -46,23 +46,23 @@ def q(cmd):
     try:
         r = inst.query(cmd).strip()
     except Exception as e:
-        r = "(Fehler: {})".format(e)
+        r = "(error: {})".format(e)
     print("  {:<16} -> {}".format(cmd, r))
 
 
-print("\n== Geraete-Info & Status (read-only) ==")
+print("\n== Device info & status (read-only) ==")
 q('*IDN?')
 q('FUNC?')
 q('RANGE?')
 q('RATE?')
 
-print("\n== 5 Messungen ==")
+print("\n== 5 readings ==")
 for _ in range(5):
     q('MEAS?')
     time.sleep(0.3)
 
 if DO_SWITCH:
-    print("\n== Schreib-Demo: auf AC umschalten, messen, zurueck auf DC ==")
+    print("\n== Write demo: switch to AC, measure, back to DC ==")
     inst.write('CONF:VOLT:AC')
     time.sleep(0.9)
     q('FUNC?')
@@ -70,9 +70,9 @@ if DO_SWITCH:
     inst.write('CONF:VOLT:DC')
     time.sleep(0.6)
     q('FUNC?')
-    print("  (wieder auf DC gestellt)")
+    print("  (back on DC)")
 else:
-    print("\n(Tipp: mit  --switch  wird zusaetzlich eine Schreib-Demo ausgefuehrt)")
+    print("\n(tip: pass  --switch  to also run a write demo)")
 
 inst.close()
-print("\nFertig. ✔")
+print("\nDone. ok")

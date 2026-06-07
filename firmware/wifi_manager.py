@@ -351,7 +351,7 @@ class WifiManager:
         client.send('<style>body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,Arial,sans-serif;background:#eef1f7;color:#111;margin:0}.wrap{max-width:720px;margin:18px auto;padding:0 12px}h1{font-size:28px;text-align:center;margin:8px 0 14px;color:#0f172a}.card{background:#fff;border-radius:14px;box-shadow:0 6px 16px rgba(2,6,23,.06);margin:14px 0;overflow:hidden}.card h2{margin:0;padding:12px 16px;border-bottom:1px solid #edf2f7;font-size:18px}.list{padding:0}.row{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid #f1f5f9}.row:last-child{border-bottom:0}.left{display:flex;align-items:center;gap:10px}.ssid{font-weight:600}.meta{font-size:12px;opacity:.8}.lock{opacity:.75}.section{padding:14px 16px}label.small{display:block;font-size:12px;margin:8px 0 6px;color:#334155}input[type=text],input[type=password],input[type=number]{width:100%;padding:10px 12px;border:1px solid #e2e8f0;border-radius:10px;box-sizing:border-box;background:#fbfdff}.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.btn{width:100%;padding:12px 14px;border:0;border-radius:12px;background:#2563eb;color:#fff;font-weight:700;margin:14px 0}</style></head><body><div class="wrap">')
         client.send('<h1>OWON XDM Remote Setup</h1>')
         client.send('<form action="/configure" method="post" onsubmit="return chk()">')
-        client.send('<div class="card"><h2>WiFi<button type="button" onclick="location.reload()" style="float:right;font-size:12px;padding:5px 11px;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer">&#8635; Aktualisieren</button></h2><div class="list">')
+        client.send('<div class="card"><h2>WiFi<button type="button" onclick="location.reload()" style="float:right;font-size:12px;padding:5px 11px;border:1px solid #2563eb;background:#2563eb;color:#fff;border-radius:8px;cursor:pointer">&#8635; Refresh</button></h2><div class="list">')
         for ssid, ch, rssi, auth in nets:
             qual = int(max(min((rssi + 100) * 2, 100), 0))
             band = '2.4 GHz' if ch <= 14 else '5 GHz'
@@ -359,13 +359,13 @@ class WifiManager:
             checked = ' checked' if saved_ssid and ssid == saved_ssid else ''
             row = '<label class="row"><span class="left"><input type="radio" name="ssid" value="' + ssid + '"' + checked + '><span class="ssid">' + ssid + '</span><span class="lock">' + lock + '</span></span><span class="meta">' + str(qual) + '% · ch ' + str(ch) + ' · ' + band + '</span></label>'
             client.send(row)
-        client.send('</div><div class="section"><label class="small">WLAN-Passwort</label><input type="password" id="pw" name="password" autocomplete="off">')
-        client.send('<label class="small">Passwort best&auml;tigen</label><input type="password" id="pw2" name="password2" autocomplete="off">')
-        client.send('<label class="small" style="display:flex;align-items:center;gap:7px;margin-top:8px"><input type="checkbox" id="showpw"> Passwort anzeigen</label></div></div>')
-        client.send('<div class="card"><div class="section"><button class="btn" type="submit">Speichern &amp; Verbinden</button></div></div>')
+        client.send('</div><div class="section"><label class="small">WiFi password</label><input type="password" id="pw" name="password" autocomplete="off">')
+        client.send('<label class="small">Confirm password</label><input type="password" id="pw2" name="password2" autocomplete="off">')
+        client.send('<label class="small" style="display:flex;align-items:center;gap:7px;margin-top:8px"><input type="checkbox" id="showpw"> Show password</label></div></div>')
+        client.send('<div class="card"><div class="section"><button class="btn" type="submit">Save &amp; Connect</button></div></div>')
         client.send('<script>')
         client.send('var s=document.getElementById("showpw");if(s)s.onchange=function(){var t=s.checked?"text":"password";document.getElementById("pw").type=t;document.getElementById("pw2").type=t;};')
-        client.send('function chk(){var a=document.getElementById("pw").value,b=document.getElementById("pw2").value;if(a!==b){alert("Passwoerter stimmen nicht ueberein");return false;}return true;}')
+        client.send('function chk(){var a=document.getElementById("pw").value,b=document.getElementById("pw2").value;if(a!==b){alert("Passwords do not match");return false;}return true;}')
         client.send('</script>')
         client.send('</form></div></body></html>')
 
@@ -409,12 +409,12 @@ class WifiManager:
             pass
         url = 'http://' + host + '.local/'
         self.send_header(client)
-        client.send('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Gespeichert</title>')
+        client.send('<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Saved</title>')
         client.send('<style>body{font-family:-apple-system,Segoe UI,Roboto,Arial,sans-serif;background:#0f172a;color:#e2e8f0;display:flex;min-height:100vh;align-items:center;justify-content:center;margin:0;padding:18px}.c{background:#1e293b;border:1px solid #243049;border-radius:16px;padding:26px 30px;max-width:460px;text-align:center}h2{margin:0 0 10px;color:#38bdf8}p{color:#94a3b8;line-height:1.5}b{color:#e2e8f0}a.btn{display:inline-block;margin-top:14px;background:#2563eb;color:#fff;text-decoration:none;padding:11px 18px;border-radius:10px;font-weight:700}.sp{display:inline-block;width:14px;height:14px;border:2px solid #334155;border-top-color:#38bdf8;border-radius:50%;animation:s 1s linear infinite;vertical-align:middle;margin-right:8px}@keyframes s{to{transform:rotate(360deg)}}</style></head><body><div class="c">')
-        client.send('<h2>Gespeichert &#10003;</h2>')
-        client.send('<p>WLAN <b>' + ssid + '</b> gespeichert. Das Ger&auml;t startet neu&hellip;</p>')
-        client.send('<p><b>Wichtig:</b> Verbinde dein Handy/PC jetzt wieder mit deinem normalen WLAN.</p>')
-        client.send('<p id="st"><span class="sp"></span>Warte auf <b>' + host + '.local</b> &hellip;</p>')
+        client.send('<h2>Saved &#10003;</h2>')
+        client.send('<p>WiFi <b>' + ssid + '</b> saved. The device is rebooting&hellip;</p>')
+        client.send('<p><b>Important:</b> reconnect your phone/PC to your normal WiFi now.</p>')
+        client.send('<p id="st"><span class="sp"></span>Waiting for <b>' + host + '.local</b> &hellip;</p>')
         client.send('<a class="btn" href="' + url + '">' + host + '.local &#8594;</a>')
         client.send('<script>var u="' + url + '";function go(){fetch(u+"api/status",{mode:"no-cors",cache:"no-store"}).then(function(){location.href=u;}).catch(function(){setTimeout(go,2000);});}setTimeout(go,7000);</script>')
         client.send('</div></body></html>')

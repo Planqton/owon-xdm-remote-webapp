@@ -34,7 +34,7 @@ def run(err=None):
         ip = '?'
     dbg.log('RECOV', 'up at http://{}/  reason={}'.format(ip, err))
 
-    sub = "RECOVERY-Modus &mdash; app.py-Fehler: {} &mdash; reparierte Datei hochladen, dann Neustart.".format(err)
+    sub = "Recovery mode &mdash; app.py error: {} &mdash; upload a fixed file, then reboot.".format(err)
 
     s = socket.socket()
     s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
