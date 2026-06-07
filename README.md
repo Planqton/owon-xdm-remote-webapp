@@ -5,6 +5,8 @@ WiFi remote & web interface for the **OWON XDM1041** bench multimeter, running o
 > **Derivative work / fork of [Elektroarzt/owon-xdm-remote](https://github.com/Elektroarzt/owon-xdm-remote) — licensed under GPLv3.**
 > The original (ESP32-C3 + MQTT) was the basis: `firmware/wifi_manager.py` comes from there (Igor Ferreira, mod. Elektroarzt), as does the SCPI startup handshake. This variant runs on a classic **ESP32-WROOM**, **without MQTT/Home Assistant** — instead a standalone web app, OTA, watchdog/rollback and a PyVISA SCPI server. See [`NOTICE`](NOTICE).
 
+> 🚧 **Early development / work in progress.** This project is at an early stage. Expect rough edges and bugs — several features don't work as intended yet and things may change or break. Use at your own risk and feel free to open issues.
+
 ![Dashboard](docs/screenshot.png)
 
 ---
