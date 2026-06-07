@@ -3,7 +3,7 @@
 WiFi remote & web interface for the **OWON XDM1041** bench multimeter, running on an **ESP32-WROOM** (MicroPython) — with a professional browser dashboard, live graph, OTA updates, web console, and **brick-proof self-healing**.
 
 > **Derivative work / fork of [Elektroarzt/owon-xdm-remote](https://github.com/Elektroarzt/owon-xdm-remote) — licensed under GPLv3.**
-> The original (ESP32-C3 + MQTT) was the basis: `firmware/wifi_manager.py` comes from there (Igor Ferreira, mod. Elektroarzt), as does the SCPI startup handshake. This variant runs on a classic **ESP32-WROOM**, **without MQTT/Home Assistant** — instead a standalone web app, OTA and watchdog/rollback. See [`NOTICE`](NOTICE).
+> The original (ESP32-C3 + MQTT) was the basis: `firmware/wifi_manager.py` comes from there (Igor Ferreira, mod. Elektroarzt), as does the SCPI startup handshake. This variant runs on a classic **ESP32-WROOM**, **without MQTT/Home Assistant** — instead a standalone web app, OTA and watchdog/rollback.
 
 > 🚧 **Early development / work in progress.** This project is at an early stage. Expect rough edges and bugs — several features don't work as intended yet and things may change or break. Use at your own risk and feel free to open issues.
 
@@ -150,4 +150,4 @@ This project is a **derivative work** of **[Elektroarzt/owon-xdm-remote](https:/
 - `wifi_manager.py`: WiFiManager by **Igor Ferreira** (MIT), modified by Elektroarzt and extended here.
 - **New in this variant:** ESP32-WROOM port, full web app/REST API, OTA + recovery + watchdog + full-set rollback, `flash.sh`.
 
-Detailed "inherited vs new" breakdown in [`NOTICE`](NOTICE). When distributing/publishing: comply with GPLv3 (open source + attribution).
+When distributing/publishing: comply with GPLv3 (open source + attribution).
