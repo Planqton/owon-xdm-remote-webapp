@@ -76,7 +76,7 @@ TABS = [
 ]
 DEFAULT_MODE = 'VDC'
 
-CODE_TIMESTAMP = "2026-06-06 (app v14: page on flash (fix WiFi OOM))"
+CODE_TIMESTAMP = "2026-06-06 (app v15: topbar toggles + RAM meter (gc))"
 
 # ─── Globals ──────────────────────────────────────────────────────────────────────
 uart_comm = None
@@ -578,10 +578,13 @@ def serve_reading(cl):
 
 def serve_status(cl):
     g = MODE_MAP.get(_func or _func_req, ('', ''))[1]
+    gc.collect()              # report true usage (post-GC) + keep the heap defragged
+    mf = gc.mem_free()
+    ma = gc.mem_alloc()
     body = ('{{"idn":"{}","function":"{}","g":"{}","rate":"{}","range":"{}","auto":{},'
-            '"value":{},"raw":"{}","fw":"{}"}}').format(
+            '"value":{},"raw":"{}","memfree":{},"memalloc":{},"fw":"{}"}}').format(
         _idn, _func or _func_req, g, _rate or '?', _range_lbl, _auto,
-        _fmt(_v_val), _v_raw, CODE_TIMESTAMP)
+        _fmt(_v_val), _v_raw, mf, ma, CODE_TIMESTAMP)
     ota.send(cl, body, "application/json")
 
 

@@ -10,6 +10,8 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .brand{font-weight:800;letter-spacing:.5px}.brand span{font-weight:400;color:var(--mut);font-size:12px;margin-left:8px}
 .hlinks a{color:var(--mut);text-decoration:none;font-size:13px;margin-left:14px}.hlinks a:hover{color:var(--acc)}
 .sps{font-variant-numeric:tabular-nums;font-size:12px;color:var(--ok);background:#0e1a12;border:1px solid #1f3b29;border-radius:6px;padding:2px 8px}
+.swrow{display:flex;align-items:center;gap:10px;margin:9px 0;cursor:pointer;font-size:13px;color:var(--txt)}
+.swrow input{width:17px;height:17px;accent-color:var(--acc);cursor:pointer;margin:0}
 .conn{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--mut);margin-left:14px}
 .conn.on{background:var(--ok)}.conn.bad{background:var(--bad)}
 .tabs{display:flex;gap:4px;padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);flex:0 0 auto;overflow-x:auto}
@@ -92,7 +94,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
 </style></head><body>
 <header>
  <div class="brand">OWON XDM1041 <span id="idn">connecting…</span></div>
- <div class="hlinks"><span id="sps" class="sps">– S/s</span><a href="#" id="gear" title="Settings">&#9881;</a><a href="/console">Console</a><a href="/ota">OTA</a><span id="conn" class="conn"></span></div>
+ <div class="hlinks"><span id="sps" class="sps">– S/s</span><span id="mem" class="sps" style="display:none"></span><a href="#" id="gear" title="Settings">&#9881;</a><a href="/console">Console</a><a href="/ota">OTA</a><span id="conn" class="conn"></span></div>
 </header>
 <nav class="tabs" id="tabs"></nav>
 <div class="main">
@@ -141,6 +143,10 @@ button:disabled{opacity:.4;cursor:not-allowed}
   </div>
   <textarea class="io" id="io" placeholder="Paste JSON here, then Apply"></textarea>
   <div class="actions" id="impActions" style="display:none"><button class="primary" id="impApply">Apply</button></div>
+  <div class="grp" style="margin-top:16px"><h3>Top bar</h3>
+   <label class="swrow"><input type="checkbox" id="sw_sps"><span>Show sampling rate (S/s)</span></label>
+   <label class="swrow"><input type="checkbox" id="sw_mem"><span>Show memory usage (RAM)</span></label>
+  </div>
  </div>
  <div class="spane" data-p="network">
   <div class="netgrid">
@@ -188,6 +194,8 @@ function waitRedirect(url,title){
 }
 var cur={k:'VDC',g:'V'},trig='auto',hold=false,curTab=0,curRange='',unitMode=(localStorage.getItem('xdm_unitmode')||'range');
 var yMode=(localStorage.getItem('xdm_ymode')||'range');if(yMode=='manual')yMode='range';var manMin=null,manMax=null;
+var showSps=localStorage.getItem('xdm_show_sps')!=='0',showMem=localStorage.getItem('xdm_show_mem')==='1';
+function applyTopbar(){el('sps').style.display=showSps?'':'none';el('mem').style.display=showMem?'':'none';}
 var stats={min:null,max:null,sum:0,cnt:0},hist=[];
 // {f,u} unit/scale for the Y axis (consistent across ticks), auto-scaled to a magnitude
 function unitFor(a,g){a=Math.abs(a);
@@ -283,6 +291,7 @@ async function reading(){try{var r=await fetch('/api/reading',{cache:'no-store'}
  }catch(e){el('conn').className='conn bad';el('modeline').textContent='ESP unreachable';}}
 async function status(){try{var r=await fetch('/api/status',{cache:'no-store'});var j=await r.json();
  el('idn').textContent=j.idn||'';el('rangelbl').textContent=j.range||'–';curRange=j.range||'';
+ if(j.memfree!==undefined){var tot=j.memfree+j.memalloc;el('mem').textContent='RAM '+Math.round(j.memalloc/tot*100)+'% · '+Math.round(j.memalloc/1024)+'/'+Math.round(tot/1024)+' KB';}
  var bs=el('rate').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-r')==j.rate);
  el('rauto').classList.toggle('active',j.auto==1);
  }catch(e){}}
@@ -361,6 +370,10 @@ el('ymode').onclick=function(e){var m=e.target.getAttribute('data-y');if(m)setYm
 el('yin').onclick=function(){yZoom(0.8);};
 el('yout').onclick=function(){yZoom(1.25);};
 applyYmodeUI();
+el('sw_sps').checked=showSps;el('sw_mem').checked=showMem;
+el('sw_sps').onchange=function(){showSps=el('sw_sps').checked;try{localStorage.setItem('xdm_show_sps',showSps?'1':'0');}catch(e){}applyTopbar();};
+el('sw_mem').onchange=function(){showMem=el('sw_mem').checked;try{localStorage.setItem('xdm_show_mem',showMem?'1':'0');}catch(e){}applyTopbar();};
+applyTopbar();
 loadTheme();applyUmode();buildTabs();buildSubs();checkCrash();
 setInterval(function(){if(trig=='auto'&&!hold)reading();},250);
 setInterval(status,1500);status();reading();
