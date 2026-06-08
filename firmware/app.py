@@ -76,7 +76,7 @@ TABS = [
 ]
 DEFAULT_MODE = 'VDC'
 
-CODE_TIMESTAMP = "2026-06-06 (app v11: crash-log + range-graph)"
+CODE_TIMESTAMP = "2026-06-06 (app v12: resizable graph)"
 
 # ─── Globals ──────────────────────────────────────────────────────────────────────
 uart_comm = None
@@ -430,7 +430,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .val.hold{color:var(--warn)}.val.ol{color:var(--bad)}
 .unit{font-size:clamp(20px,3vw,42px);color:var(--mut);margin-left:10px}
 .modeline{margin-top:10px;color:var(--mut);font-size:14px;letter-spacing:1px}
-.spark{width:96%;height:150px;margin-top:14px}
+.sparkwrap{width:96%;height:150px;margin-top:14px;resize:vertical;overflow:hidden;min-height:90px;max-height:75vh;position:relative}
+.sparkwrap::after{content:"⤡";position:absolute;right:3px;bottom:1px;font-size:12px;color:var(--mut);opacity:.55;pointer-events:none}
+.spark{width:100%;height:100%;display:block}
 .stats{display:flex;gap:22px;margin-top:10px;color:var(--mut);font-size:13px;align-items:center}
 .stats b{color:var(--txt);font-variant-numeric:tabular-nums}
 .stats button{background:var(--panel2);color:var(--mut);border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px}
@@ -484,7 +486,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
  .panel{border-left:none;border-top:1px solid var(--line);flex-direction:row;flex-wrap:wrap;gap:12px;max-height:42vh}
  .grp{flex:1 1 130px}
  .stage{padding:12px}
- .spark{height:96px}
+ .sparkwrap{height:120px}
  .stats{gap:14px;font-size:12px;flex-wrap:wrap;justify-content:center}
 }
 </style></head><body>
@@ -499,7 +501,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <div class="readout">
    <div class="reading"><span id="val" class="val">--</span><span id="unit" class="unit"></span></div>
    <div class="modeline" id="modeline"></div>
-   <canvas id="spark" class="spark"></canvas>
+   <div class="sparkwrap" id="sparkwrap"><canvas id="spark" class="spark"></canvas></div>
    <div class="stats">
     <span>MIN <b id="min">–</b></span><span>MAX <b id="max">–</b></span><span>AVG <b id="avg">–</b></span>
     <button id="rstStat">Reset</button>
@@ -722,6 +724,9 @@ el('netReboot').onclick=function(){netSave(true);};
 async function checkCrash(){try{var j=await(await fetch('/api/crash',{cache:'no-store'})).json();
  if(j.unclean){el('crashlog').textContent=j.log||'(no log)';el('crashovl').classList.add('show');}}catch(e){}}
 el('crashDismiss').onclick=function(){el('crashovl').classList.remove('show');fetch('/api/crash?clear=1',{cache:'no-store'}).catch(function(){});};
+(function(){var sw=el('sparkwrap');if(!sw)return;
+ try{var h=localStorage.getItem('xdm_graphh');if(h)sw.style.height=h+'px';}catch(e){}
+ if(window.ResizeObserver){var ro=new ResizeObserver(function(){drawChart();try{localStorage.setItem('xdm_graphh',Math.round(sw.clientHeight));}catch(e){}});ro.observe(sw);}})();
 loadTheme();applyUmode();buildTabs();buildSubs();checkCrash();
 setInterval(function(){if(trig=='auto'&&!hold)reading();},250);
 setInterval(status,1500);status();reading();
