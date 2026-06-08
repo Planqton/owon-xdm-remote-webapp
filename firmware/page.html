@@ -1,0 +1,367 @@
+<!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<title>OWON XDM1041 Bench</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--bg:#0a0f1a;--panel:#121a2b;--panel2:#0e1626;--line:#243049;--mut:#64748b;--txt:#e2e8f0;--acc:#38bdf8;--accb:#2563eb;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
+html,body{height:100%}
+body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Inter,Arial,sans-serif;background:var(--bg);color:var(--txt);display:flex;flex-direction:column;height:100vh;overflow:hidden}
+header{display:flex;align-items:center;justify-content:space-between;padding:10px 18px;background:var(--panel2);border-bottom:1px solid var(--line);flex:0 0 auto}
+.brand{font-weight:800;letter-spacing:.5px}.brand span{font-weight:400;color:var(--mut);font-size:12px;margin-left:8px}
+.hlinks a{color:var(--mut);text-decoration:none;font-size:13px;margin-left:14px}.hlinks a:hover{color:var(--acc)}
+.sps{font-variant-numeric:tabular-nums;font-size:12px;color:var(--ok);background:#0e1a12;border:1px solid #1f3b29;border-radius:6px;padding:2px 8px}
+.conn{display:inline-block;width:9px;height:9px;border-radius:50%;background:var(--mut);margin-left:14px}
+.conn.on{background:var(--ok)}.conn.bad{background:var(--bad)}
+.tabs{display:flex;gap:4px;padding:8px 12px;background:var(--panel2);border-bottom:1px solid var(--line);flex:0 0 auto;overflow-x:auto}
+.tab{padding:9px 20px;border:1px solid var(--line);border-bottom:none;border-radius:10px 10px 0 0;background:transparent;color:var(--mut);font-weight:700;font-size:15px;cursor:pointer;white-space:nowrap}
+.tab.active{background:var(--panel);color:var(--acc);border-color:var(--acc)}
+.main{flex:1 1 auto;display:grid;grid-template-columns:1fr 300px;min-height:0}
+.stage{display:flex;flex-direction:column;padding:18px 22px;min-width:0}
+.submodes{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.sub{padding:7px 16px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--mut);font-size:13px;font-weight:600;cursor:pointer}
+.sub.active{background:var(--accb);border-color:var(--accb);color:#fff}
+.readout{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;min-height:0;position:relative}
+.reading{display:flex;align-items:baseline}
+.val{font-size:clamp(48px,11vw,140px);font-weight:800;font-variant-numeric:tabular-nums;color:var(--acc);line-height:1}
+.val.hold{color:var(--warn)}.val.ol{color:var(--bad)}
+.unit{font-size:clamp(20px,3vw,42px);color:var(--mut);margin-left:10px}
+.modeline{margin-top:10px;color:var(--mut);font-size:14px;letter-spacing:1px}
+.sparkwrap{width:96%;height:150px;margin-top:14px;resize:vertical;overflow:hidden;min-height:90px;max-height:75vh;position:relative}
+.sparkwrap::after{content:"⤡";position:absolute;right:3px;bottom:1px;font-size:12px;color:var(--mut);opacity:.55;pointer-events:none}
+.spark{width:100%;height:100%;display:block}
+.stats{display:flex;gap:22px;margin-top:10px;color:var(--mut);font-size:13px;align-items:center}
+.yctl{display:flex;align-items:center;gap:8px;margin-top:8px;font-size:12px;color:var(--mut);flex-wrap:wrap}
+.yzoom{width:30px;height:26px;border:1px solid var(--line);background:var(--panel2);color:var(--txt);border-radius:7px;cursor:pointer;font-size:15px;line-height:1;padding:0}
+.yzoom:hover{border-color:var(--acc)}
+.yhint{opacity:.6;font-size:11px}
+.stats b{color:var(--txt);font-variant-numeric:tabular-nums}
+.stats button{background:var(--panel2);color:var(--mut);border:1px solid var(--line);border-radius:8px;padding:4px 10px;cursor:pointer;font-size:12px}
+.panel{background:var(--panel2);border-left:1px solid var(--line);padding:16px;overflow:auto;display:flex;flex-direction:column;gap:18px}
+.grp h3{font-size:11px;text-transform:uppercase;letter-spacing:1.5px;color:var(--mut);margin-bottom:8px}
+.seg{display:flex;gap:6px}
+.seg button,.wide,.rangebox button{font-family:inherit}
+.seg button{flex:1;padding:10px 0;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--mut);font-weight:700;cursor:pointer}
+.seg button.active{background:var(--accb);border-color:var(--accb);color:#fff}
+.rangebox{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.rangebox button{width:46px;padding:10px 0;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--txt);font-size:16px;cursor:pointer}
+.rangebox span{flex:1;text-align:center;font-weight:700;font-variant-numeric:tabular-nums}
+.wide{width:100%;padding:11px;border:1px solid var(--line);border-radius:9px;background:var(--panel);color:var(--txt);font-weight:700;cursor:pointer}
+.wide.active{background:var(--accb);border-color:var(--accb);color:#fff}
+.hold.active{background:var(--warn);border-color:var(--warn);color:#1a1206}
+button:disabled{opacity:.4;cursor:not-allowed}
+#gear{font-size:16px;text-decoration:none;color:var(--mut);margin-left:14px}#gear:hover{color:var(--acc)}
+.ovl{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none;align-items:center;justify-content:center;z-index:50}
+.ovl.show{display:flex}
+.wait{position:fixed;inset:0;background:rgba(8,12,22,.94);display:none;align-items:center;justify-content:center;z-index:100;text-align:center}
+.wait.show{display:flex}
+.wait h2{color:var(--acc);margin:16px 0 6px}.wait p{color:var(--mut);max-width:440px;margin:0 auto}
+.wait .sp{width:46px;height:46px;border:4px solid var(--line);border-top-color:var(--acc);border-radius:50%;animation:spin 1s linear infinite;margin:0 auto}
+.wait a{display:inline-block;margin-top:18px;background:var(--accb);color:#fff;text-decoration:none;padding:11px 20px;border-radius:10px;font-weight:700}
+@keyframes spin{to{transform:rotate(360deg)}}
+.dlg{background:var(--panel);border:1px solid var(--line);border-radius:16px;width:min(740px,95vw);max-height:92vh;overflow:auto}
+.dlgtitle{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;border-bottom:1px solid var(--line)}
+.dlgtitle b{font-size:17px}.dlgx{cursor:pointer;color:var(--mut);font-size:22px;line-height:1}
+.stabs{display:flex;gap:4px;padding:14px 16px 0}
+.stab{padding:8px 18px;border:1px solid var(--line);border-bottom:none;border-radius:9px 9px 0 0;background:transparent;color:var(--mut);font-weight:700;cursor:pointer}
+.stab.active{background:var(--panel2);color:var(--acc);border-color:var(--acc)}
+.spane{padding:18px;display:none}.spane.active{display:block}
+.themerow{display:flex;gap:10px;margin-bottom:18px}
+.themebtn{flex:1;padding:14px;border:1px solid var(--line);border-radius:10px;background:var(--panel2);color:var(--txt);cursor:pointer;font-weight:700}
+.themebtn.active{border-color:var(--acc);color:var(--acc)}
+.colors{display:grid;grid-template-columns:repeat(2,1fr);gap:10px}
+.colorrow{display:flex;align-items:center;justify-content:space-between;background:var(--panel2);border:1px solid var(--line);border-radius:9px;padding:8px 12px}
+.colorrow label{font-size:13px;color:var(--mut)}
+.colorrow input{width:46px;height:30px;border:1px solid var(--line);border-radius:6px;background:none;cursor:pointer;padding:0}
+.actions{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px}
+.actions button{padding:9px 14px;border:1px solid var(--line);border-radius:9px;background:var(--panel2);color:var(--txt);cursor:pointer;font-weight:600}
+.actions button.primary{background:var(--accb);border-color:var(--accb);color:#fff}
+.io{width:100%;height:96px;margin-top:10px;background:var(--bg);color:var(--txt);border:1px solid var(--line);border-radius:9px;font-family:monospace;font-size:12px;padding:8px;display:none}
+.sysinfo{font-size:13px;line-height:1.9;color:var(--mut)}.sysinfo b{color:var(--txt)}
+.netgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.netgrid label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:5px}
+.netgrid input,.netgrid select{padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);font-size:13px}
+.hint{font-size:12px;color:var(--mut);margin:10px 0 0;line-height:1.5}
+@media (max-width:760px){
+ .main{grid-template-columns:1fr;grid-template-rows:1fr auto}
+ .panel{border-left:none;border-top:1px solid var(--line);flex-direction:row;flex-wrap:wrap;gap:12px;max-height:42vh}
+ .grp{flex:1 1 130px}
+ .stage{padding:12px}
+ .sparkwrap{height:120px}
+ .stats{gap:14px;font-size:12px;flex-wrap:wrap;justify-content:center}
+}
+</style></head><body>
+<header>
+ <div class="brand">OWON XDM1041 <span id="idn">connecting…</span></div>
+ <div class="hlinks"><span id="sps" class="sps">– S/s</span><a href="#" id="gear" title="Settings">&#9881;</a><a href="/console">Console</a><a href="/ota">OTA</a><span id="conn" class="conn"></span></div>
+</header>
+<nav class="tabs" id="tabs"></nav>
+<div class="main">
+ <section class="stage">
+  <div class="submodes" id="submodes"></div>
+  <div class="readout">
+   <div class="reading"><span id="val" class="val">--</span><span id="unit" class="unit"></span></div>
+   <div class="modeline" id="modeline"></div>
+   <div class="sparkwrap" id="sparkwrap"><canvas id="spark" class="spark"></canvas></div>
+   <div class="yctl">
+    <span>Y&#8209;axis</span>
+    <div class="seg" id="ymode"><button data-y="range">Range</button><button data-y="auto">Auto&#8209;fit</button><button data-y="manual">Manual</button></div>
+    <button class="yzoom" id="yin" title="Zoom in (mouse wheel up)">+</button>
+    <button class="yzoom" id="yout" title="Zoom out (mouse wheel down)">&#8722;</button>
+    <span class="yhint">wheel over graph to zoom</span>
+   </div>
+   <div class="stats">
+    <span>MIN <b id="min">–</b></span><span>MAX <b id="max">–</b></span><span>AVG <b id="avg">–</b></span>
+    <button id="rstStat">Reset</button>
+   </div>
+  </div>
+ </section>
+ <aside class="panel">
+  <div class="grp"><h3>Sampling</h3><div class="seg" id="rate">
+   <button data-r="S">Low</button><button data-r="M">Mid</button><button data-r="F">High</button></div></div>
+  <div class="grp"><h3>Range</h3>
+   <div class="rangebox"><button id="rdown">&#9660;</button><span id="rangelbl">–</span><button id="rup">&#9650;</button></div>
+   <button id="rauto" class="wide">Auto</button></div>
+  <div class="grp"><h3>Trigger</h3><div class="seg" id="trig">
+   <button data-t="auto" class="active">Auto</button><button data-t="single">Single</button></div>
+   <button id="trigbtn" class="wide" disabled style="margin-top:8px">Trigger &#9658;</button></div>
+  <div class="grp"><h3>Display</h3><button id="hold" class="wide hold">Hold</button></div>
+ </aside>
+</div>
+<div class="ovl" id="ovl"><div class="dlg">
+ <div class="dlgtitle"><b>Settings</b><span class="dlgx" id="ovlx">&#10005;</span></div>
+ <div class="stabs"><button class="stab active" data-s="design">Design</button><button class="stab" data-s="display">Display</button><button class="stab" data-s="network">Network</button><button class="stab" data-s="system">System</button></div>
+ <div class="spane active" data-p="design">
+  <div class="themerow" id="themerow"></div>
+  <div class="colors" id="colors"></div>
+  <div class="actions">
+   <button class="primary" id="saveTheme">Save</button>
+   <button id="resetTheme">Reset</button>
+   <button id="expBtn">Export</button>
+   <button id="impBtn">Import</button>
+  </div>
+  <textarea class="io" id="io" placeholder="Paste JSON here, then Apply"></textarea>
+  <div class="actions" id="impActions" style="display:none"><button class="primary" id="impApply">Apply</button></div>
+ </div>
+ <div class="spane" data-p="network">
+  <div class="netgrid">
+   <label>Hostname<input id="n_host" placeholder="owon"></label>
+   <label>Mode<select id="n_dhcp"><option value="1">DHCP (automatic)</option><option value="0">Static IP</option></select></label>
+   <label>IP address<input id="n_ip" placeholder="192.168.0.50"></label>
+   <label>Subnet mask<input id="n_mask" placeholder="255.255.255.0"></label>
+   <label>Gateway<input id="n_gw" placeholder="192.168.0.1"></label>
+   <label>DNS<input id="n_dns" placeholder="192.168.0.1"></label>
+  </div>
+  <div class="actions"><button id="netSave">Save only</button><button class="primary" id="netReboot">Save &amp; Reboot (apply)</button></div>
+  <p class="hint" id="netmsg"></p>
+  <p class="hint">The hostname shows up in your router; <b>owon.local</b> works depending on router/client. A static IP is guaranteed &ndash; pick a free address outside the DHCP range. Changes take effect after reboot.</p>
+ </div>
+ <div class="spane" data-p="display">
+  <div class="grp"><h3>Unit</h3><div class="seg" id="umode">
+   <button data-u="range">Match meter</button><button data-u="auto">Auto-scale</button></div></div>
+  <p class="hint">&bdquo;Match meter&ldquo;: the unit follows the measurement range (e.g. 5&nbsp;V range &rarr; shown in V) &ndash; just like the multimeter display.<br>&bdquo;Auto-scale&ldquo;: nicest unit for the value (mV/V/kV &hellip;).</p>
+ </div>
+ <div class="spane" data-p="system"><div id="sysinfo" class="sysinfo">…</div>
+  <div class="grp" style="margin-top:18px"><h3>Maintenance</h3>
+   <button id="factoryBtn" class="wide" style="background:var(--bad);border-color:var(--bad);color:#fff">Factory reset</button></div>
+  <p class="hint">Erases WiFi &amp; network settings and reboots into the setup access point.</p>
+ </div>
+</div></div>
+<div class="wait" id="waitovl"><div><div class="sp"></div><h2 id="waitt">Rebooting...</h2><p id="waitm"></p><a id="waitlink" href="#">open</a></div></div>
+<div class="ovl" id="crashovl"><div class="dlg">
+ <div class="dlgtitle"><b>&#9888; OWON ESP did not shut down properly</b></div>
+ <div class="spane active">
+  <p class="hint">The previous session ended unexpectedly (crash, hang or power loss). Last log:</p>
+  <pre id="crashlog" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;max-height:50vh;overflow:auto;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;color:var(--mut)"></pre>
+  <div class="actions"><button class="primary" id="crashDismiss">Dismiss</button></div>
+ </div>
+</div></div>
+<script>
+var CFG=__CFG__;
+function waitRedirect(url,title){
+ el('waitt').textContent=title||'Rebooting...';
+ el('waitm').textContent='Waiting for '+url+' to come up - then redirecting automatically.';
+ var a=el('waitlink');a.href=url;a.textContent=url;
+ el('waitovl').classList.add('show');
+ setTimeout(function poll(){
+  fetch(url+'api/status',{mode:'no-cors',cache:'no-store'}).then(function(){location.replace(url);}).catch(function(){setTimeout(poll,2000);});
+ },6000);
+}
+var cur={k:'VDC',g:'V'},trig='auto',hold=false,curTab=0,curRange='',unitMode=(localStorage.getItem('xdm_unitmode')||'range');
+var yMode=(localStorage.getItem('xdm_ymode')||'range');if(yMode=='manual')yMode='range';var manMin=null,manMax=null;
+var stats={min:null,max:null,sum:0,cnt:0},hist=[];
+// {f,u} unit/scale for the Y axis (consistent across ticks), auto-scaled to a magnitude
+function unitFor(a,g){a=Math.abs(a);
+ if(g=='V')return a<1?{f:1e3,u:'mV'}:a<1e3?{f:1,u:'V'}:{f:1e-3,u:'kV'};
+ if(g=='A')return a<1e-3?{f:1e6,u:'µA'}:a<1?{f:1e3,u:'mA'}:{f:1,u:'A'};
+ if(g=='R')return a<1e3?{f:1,u:'Ω'}:a<1e6?{f:1e-3,u:'kΩ'}:{f:1e-6,u:'MΩ'};
+ if(g=='C')return a<1e-9?{f:1e12,u:'pF'}:a<1e-6?{f:1e9,u:'nF'}:a<1e-3?{f:1e6,u:'µF'}:{f:1e3,u:'mF'};
+ if(g=='Hz')return a<1e3?{f:1,u:'Hz'}:a<1e6?{f:1e-3,u:'kHz'}:{f:1e-6,u:'MHz'};
+ if(g=='D')return{f:1,u:'V'};if(g=='T')return{f:1,u:'°C'};return{f:1,u:''};}
+// Y-axis bounds for the given mode (range | auto | manual)
+function computeBounds(mode){mode=mode||yMode;
+ var vs=hist.map(function(p){return p.v;});
+ var amn=vs.length?Math.min.apply(null,vs):-1,amx=vs.length?Math.max.apply(null,vs):1;
+ var rb=runit(curRange),fs=null;
+ if(rb){var rn=parseFloat(curRange);if(!isNaN(rn)&&rb.f)fs=Math.abs(rn/rb.f);}
+ var mn,mx;
+ if(mode=='manual'&&manMin!==null&&manMax!==null){mn=manMin;mx=manMax;}
+ else if(mode=='range'&&fs){if(cur.g=='V'||cur.g=='A'){mn=-fs;mx=fs;}else{mn=0;mx=fs;}}
+ else{mn=amn;mx=amx;if(mx-mn<1e-12){var pad=Math.abs(mn)*0.05+1e-6;mn-=pad;mx+=pad;}else{var mg=(mx-mn)*0.08;mn-=mg;mx+=mg;}}
+ return{mn:mn,mx:mx,rb:rb,fs:fs};}
+function applyYmodeUI(){var bs=el('ymode').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-y')==yMode);}
+function setYmode(m){
+ if(m=='manual'){var b=computeBounds(yMode=='manual'?'auto':yMode);manMin=b.mn;manMax=b.mx;}
+ else{manMin=null;manMax=null;}
+ yMode=m;try{localStorage.setItem('xdm_ymode',m);}catch(e){}applyYmodeUI();drawChart();}
+function yZoom(f){if(yMode!='manual'){var b=computeBounds();manMin=b.mn;manMax=b.mx;yMode='manual';try{localStorage.setItem('xdm_ymode','manual');}catch(e){}applyYmodeUI();}
+ var c=(manMin+manMax)/2,half=(manMax-manMin)/2*f;if(!isFinite(half)||half<1e-12)half=1e-12;manMin=c-half;manMax=c+half;drawChart();}
+function runit(label){var m=(label||'').match(/([a-zA-ZµΩ°]+)$/);if(!m)return null;var u=m[1];
+ var base=['V','A','Ω','F','Hz','C','°C','s'];var pf={p:1e12,n:1e9,u:1e6,'µ':1e6,m:1e3,k:1e-3,K:1e-3,M:1e-6,G:1e-9};
+ if(base.indexOf(u)>=0)return{f:1,u:u};var c=u.charAt(0),rest=u.slice(1);
+ if((c in pf)&&base.indexOf(rest)>=0)return{f:pf[c],u:u};return null;}
+function fmt(v,g){if(v===null)return{n:'--',u:''};var a=Math.abs(v);if(a>=1e9)return{n:'OL',u:''};
+ if(unitMode=='range'){var ru=runit(curRange);if(ru){var d=v*ru.f,bb=Math.abs(d),dc=bb>=1000?1:bb>=100?2:bb>=10?3:4;return{n:d.toFixed(dc),u:ru.u};}}
+ if(g=='V'){if(a<1)return{n:(v*1e3).toFixed(3),u:'mV'};if(a<1e3)return{n:v.toFixed(4),u:'V'};return{n:(v/1e3).toFixed(4),u:'kV'};}
+ if(g=='D')return{n:v.toFixed(4),u:'V'};
+ if(g=='A'){if(a<1e-3)return{n:(v*1e6).toFixed(2),u:'µA'};if(a<1)return{n:(v*1e3).toFixed(3),u:'mA'};return{n:v.toFixed(4),u:'A'};}
+ if(g=='R'){if(a<1e3)return{n:v.toFixed(2),u:'Ω'};if(a<1e6)return{n:(v/1e3).toFixed(3),u:'kΩ'};return{n:(v/1e6).toFixed(4),u:'MΩ'};}
+ if(g=='C'){if(a<1e-9)return{n:(v*1e12).toFixed(1),u:'pF'};if(a<1e-6)return{n:(v*1e9).toFixed(2),u:'nF'};if(a<1e-3)return{n:(v*1e6).toFixed(3),u:'µF'};return{n:(v*1e3).toFixed(3),u:'mF'};}
+ if(g=='Hz'){if(a<1e3)return{n:v.toFixed(2),u:'Hz'};if(a<1e6)return{n:(v/1e3).toFixed(3),u:'kHz'};return{n:(v/1e6).toFixed(4),u:'MHz'};}
+ if(g=='T')return{n:v.toFixed(1),u:'°C'};
+ return{n:String(v),u:''};}
+function el(id){return document.getElementById(id);}
+function buildTabs(){var t=el('tabs');t.innerHTML='';CFG.forEach(function(tb,i){
+ var b=document.createElement('button');b.className='tab'+(i==curTab?' active':'');b.textContent=tb.n;
+ b.onclick=function(){curTab=i;buildTabs();buildSubs();selSub(CFG[i].s[0]);};t.appendChild(b);});}
+function buildSubs(){var s=el('submodes');s.innerHTML='';var subs=CFG[curTab].s;
+ subs.forEach(function(sm){var b=document.createElement('button');b.className='sub'+(sm.k==cur.k?' active':'');
+  b.textContent=sm.l;b.setAttribute('data-k',sm.k);b.onclick=function(){selSub(sm);};s.appendChild(b);});}
+function selSub(sm){cur=sm;manMin=null;manMax=null;buildSubs();resetStats();fetch('/api/function?set='+sm.k,{cache:'no-store'});}
+function resetStats(){stats={min:null,max:null,sum:0,cnt:0};hist=[];el('min').textContent='–';el('max').textContent='–';el('avg').textContent='–';}
+function drawChart(){var c=el('spark');var w=c.width=c.clientWidth,h=c.height=c.clientHeight;var x=c.getContext('2d');
+ var cs=getComputedStyle(document.documentElement),CL=(cs.getPropertyValue('--line')||'#243049').trim(),CM=(cs.getPropertyValue('--mut')||'#64748b').trim(),CA=(cs.getPropertyValue('--acc')||'#38bdf8').trim();
+ x.clearRect(0,0,w,h);
+ var PL=52,PR=10,PT=8,PB=18,pw=w-PL-PR,ph=h-PT-PB;
+ x.font='11px system-ui';
+ if(hist.length<2){x.strokeStyle=CL;x.strokeRect(PL,PT,pw,ph);return;}
+ // Y axis bounds + unit depend on the selected Y mode (range / auto-fit / manual)
+ var bnd=computeBounds(),mn=bnd.mn,mx=bnd.mx,rb=bnd.rb,fs=bnd.fs;
+ var au=(yMode=='range'&&fs&&rb)?rb:unitFor(Math.max(Math.abs(mn),Math.abs(mx)),cur.g);
+ function tlab(val){var d=val*au.f,a=Math.abs(d);return d.toFixed(a>=100?1:a>=10?2:a>=1?3:4);}
+ var t1=hist[hist.length-1].t,t0=hist[0].t,span=Math.max(t1-t0,1);
+ // horizontal grid + Y labels
+ x.textAlign='right';x.textBaseline='middle';var N=4;
+ for(var i=0;i<=N;i++){var fy=i/N,yy=PT+ph*fy,val=mx-(mx-mn)*fy;
+  x.strokeStyle=CL;x.globalAlpha=.5;x.beginPath();x.moveTo(PL,yy);x.lineTo(PL+pw,yy);x.stroke();x.globalAlpha=1;
+  x.fillStyle=CM;x.fillText(tlab(val),PL-5,yy);}
+ // vertical grid + time labels
+ x.textAlign='center';x.textBaseline='top';var M=4;
+ for(var k=0;k<=M;k++){var fx=k/M,xx=PL+pw*fx;
+  x.strokeStyle=CL;x.globalAlpha=.5;x.beginPath();x.moveTo(xx,PT);x.lineTo(xx,PT+ph);x.stroke();x.globalAlpha=1;
+  var sec=(t1-(t0+span*fx))/1000;
+  x.fillStyle=CM;x.fillText(sec>0.5?('-'+sec.toFixed(0)+'s'):'now',xx,PT+ph+4);}
+ // unit (top-left) + border
+ x.textAlign='left';x.textBaseline='top';x.fillStyle=CM;x.fillText(au.u,3,PT-1);
+ x.strokeStyle=CL;x.strokeRect(PL,PT,pw,ph);
+ // data line
+ x.strokeStyle=CA;x.lineWidth=2;x.beginPath();
+ hist.forEach(function(p,i){var px=PL+(p.t-t0)/span*pw,py=PT+ph-(p.v-mn)/(mx-mn)*ph;
+  if(py<PT)py=PT;if(py>PT+ph)py=PT+ph;
+  i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();}
+function setReading(j){var f=fmt(j.value,cur.g);var ve=el('val');
+ ve.textContent=f.n;el('unit').textContent=f.u;ve.className='val'+(hold?' hold':'')+(f.n=='OL'?' ol':'');
+ if(j.value!==null&&Math.abs(j.value)<1e9){
+  if(stats.min===null||j.value<stats.min)stats.min=j.value;
+  if(stats.max===null||j.value>stats.max)stats.max=j.value;
+  stats.sum+=j.value;stats.cnt++;hist.push({t:performance.now(),v:j.value});if(hist.length>200)hist.shift();
+  el('min').textContent=fmt(stats.min,cur.g).n;el('max').textContent=fmt(stats.max,cur.g).n;
+  el('avg').textContent=fmt(stats.sum/stats.cnt,cur.g).n;drawChart();}}
+async function reading(){try{var r=await fetch('/api/reading',{cache:'no-store'});var j=await r.json();
+ el('conn').className='conn on';if(!hold)setReading(j);
+ if(j.sps!==undefined)el('sps').textContent=j.sps+' S/s';
+ el('modeline').textContent=(j.ok?'live':'stale')+(j.raw?(' · '+j.raw):'');
+ }catch(e){el('conn').className='conn bad';el('modeline').textContent='ESP unreachable';}}
+async function status(){try{var r=await fetch('/api/status',{cache:'no-store'});var j=await r.json();
+ el('idn').textContent=j.idn||'';el('rangelbl').textContent=j.range||'–';curRange=j.range||'';
+ var bs=el('rate').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-r')==j.rate);
+ el('rauto').classList.toggle('active',j.auto==1);
+ }catch(e){}}
+el('rate').onclick=function(e){var r=e.target.getAttribute('data-r');if(r)fetch('/api/rate?set='+r,{cache:'no-store'}).then(status);};
+el('rup').onclick=function(){fetch('/api/range?set=up',{cache:'no-store'}).then(status);};
+el('rdown').onclick=function(){fetch('/api/range?set=down',{cache:'no-store'}).then(status);};
+el('rauto').onclick=function(){fetch('/api/range?set=auto',{cache:'no-store'}).then(status);};
+el('trig').onclick=function(e){var t=e.target.getAttribute('data-t');if(!t)return;trig=t;
+ var bs=el('trig').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-t')==t);
+ el('trigbtn').disabled=(t!='single');};
+el('trigbtn').onclick=function(){reading();};
+el('hold').onclick=function(){hold=!hold;el('hold').classList.toggle('active',hold);};
+el('rstStat').onclick=resetStats;
+// ---- Themes / Settings ----
+var VARS=['bg','panel','panel2','line','mut','txt','acc','accb','ok','warn','bad'];
+var VLBL={bg:'Background',panel:'Panel',panel2:'Panel 2',line:'Lines',mut:'Secondary',txt:'Text',acc:'Accent',accb:'Accent 2',ok:'OK',warn:'Warning',bad:'Error'};
+var THEMES={
+ Midnight:{bg:'#0a0f1a',panel:'#121a2b',panel2:'#0e1626',line:'#243049',mut:'#64748b',txt:'#e2e8f0',acc:'#38bdf8',accb:'#2563eb',ok:'#22c55e',warn:'#f59e0b',bad:'#ef4444'},
+ Carbon:{bg:'#0d0d0f',panel:'#17181c',panel2:'#121316',line:'#2a2c33',mut:'#7a7d87',txt:'#e7e7ea',acc:'#f59e0b',accb:'#d97706',ok:'#22c55e',warn:'#eab308',bad:'#ef4444'},
+ Hell:{bg:'#eef1f7',panel:'#ffffff',panel2:'#f6f8fc',line:'#d8dee9',mut:'#64748b',txt:'#0f172a',acc:'#2563eb',accb:'#2563eb',ok:'#16a34a',warn:'#d97706',bad:'#dc2626'}};
+var palette=JSON.parse(JSON.stringify(THEMES.Midnight)),themeName='Midnight';
+function applyPalette(p){VARS.forEach(function(k){document.documentElement.style.setProperty('--'+k,p[k]);});}
+function loadTheme(){try{var t=localStorage.getItem('xdm_theme'),c=localStorage.getItem('xdm_palette');
+ if(c){palette=JSON.parse(c);themeName=t||'Custom';}else if(t&&THEMES[t]){palette=JSON.parse(JSON.stringify(THEMES[t]));themeName=t;}}catch(e){}applyPalette(palette);}
+function setTheme(n){themeName=n;palette=JSON.parse(JSON.stringify(THEMES[n]));applyPalette(palette);buildColors();buildThemeRow();}
+function buildThemeRow(){var r=el('themerow');r.innerHTML='';Object.keys(THEMES).forEach(function(n){
+ var b=document.createElement('button');b.className='themebtn'+(n==themeName?' active':'');b.textContent=n;b.onclick=function(){setTheme(n);};r.appendChild(b);});}
+function buildColors(){var c=el('colors');c.innerHTML='';VARS.forEach(function(k){
+ var row=document.createElement('div');row.className='colorrow';
+ var lab=document.createElement('label');lab.textContent=VLBL[k];
+ var inp=document.createElement('input');inp.type='color';inp.value=palette[k];
+ inp.oninput=function(){palette[k]=inp.value;themeName='Custom';document.documentElement.style.setProperty('--'+k,inp.value);buildThemeRow();};
+ row.appendChild(lab);row.appendChild(inp);c.appendChild(row);});}
+function saveTheme(){try{localStorage.setItem('xdm_theme',themeName);localStorage.setItem('xdm_palette',JSON.stringify(palette));}catch(e){}}
+function resetTheme(){try{localStorage.removeItem('xdm_theme');localStorage.removeItem('xdm_palette');}catch(e){}setTheme('Midnight');}
+async function sysInfo(){try{var j=await(await fetch('/api/status',{cache:'no-store'})).json();
+ el('sysinfo').innerHTML='Device: <b>'+j.idn+'</b><br>Firmware: <b>'+j.fw+'</b><br>Function: <b>'+j.function+'</b> · Rate: <b>'+j.rate+'</b> · Range: <b>'+j.range+'</b><br>Host: <b>'+location.host+'</b>';}catch(e){}}
+function applyUmode(){var bs=el('umode').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-u')==unitMode);}
+el('umode').onclick=function(e){var u=e.target.getAttribute('data-u');if(!u)return;unitMode=u;try{localStorage.setItem('xdm_unitmode',u);}catch(e){}applyUmode();};
+el('gear').onclick=function(e){e.preventDefault();el('ovl').classList.add('show');buildThemeRow();buildColors();sysInfo();loadNet();applyUmode();};
+el('ovlx').onclick=function(){el('ovl').classList.remove('show');};
+el('ovl').onclick=function(e){if(e.target===el('ovl'))el('ovl').classList.remove('show');};
+(function(){var ts=document.getElementsByClassName('stab');for(var i=0;i<ts.length;i++){ts[i].onclick=function(){
+ var s=this.getAttribute('data-s');
+ var a=document.getElementsByClassName('stab');for(var j=0;j<a.length;j++)a[j].classList.toggle('active',a[j].getAttribute('data-s')==s);
+ var p=document.getElementsByClassName('spane');for(var k=0;k<p.length;k++)p[k].classList.toggle('active',p[k].getAttribute('data-p')==s);};}})();
+el('saveTheme').onclick=saveTheme;el('resetTheme').onclick=resetTheme;
+el('expBtn').onclick=function(){var io=el('io');io.style.display='block';io.value=JSON.stringify({theme:themeName,palette:palette});io.focus();io.select();el('impActions').style.display='none';};
+el('impBtn').onclick=function(){var io=el('io');io.style.display='block';io.value='';io.focus();el('impActions').style.display='flex';};
+el('impApply').onclick=function(){try{var o=JSON.parse(el('io').value);var p=o.palette||o;palette=p;themeName=o.theme||'Custom';applyPalette(palette);buildColors();buildThemeRow();saveTheme();el('io').style.display='none';el('impActions').style.display='none';}catch(e){alert('Invalid JSON');}};
+el('factoryBtn').onclick=function(){
+ if(!confirm('Factory reset: erase WiFi & network settings and reboot into the setup access point?'))return;
+ waitRedirect('http://192.168.4.1/','Factory reset - rebooting into setup AP');
+ el('waitm').textContent='Connect your device to WiFi "OWON-XDM-Remote-Setup", then open http://192.168.4.1';
+ fetch('/api/factory?confirm=1',{cache:'no-store'}).catch(function(){});};
+async function loadNet(){try{var j=await(await fetch('/api/net',{cache:'no-store'})).json();
+ el('n_host').value=j.host||'';el('n_dhcp').value=String(j.dhcp);
+ el('n_ip').value=j.ip||j.cur_ip||'';el('n_mask').value=j.mask||'';el('n_gw').value=j.gw||'';el('n_dns').value=j.dns||'';
+ el('netmsg').textContent='Current IP: '+(j.cur_ip||'?');}catch(e){el('netmsg').textContent='Network config not readable';}}
+function netQ(){return 'host='+encodeURIComponent(el('n_host').value||'owon')+'&dhcp='+el('n_dhcp').value+'&ip='+encodeURIComponent(el('n_ip').value)+'&mask='+encodeURIComponent(el('n_mask').value)+'&gw='+encodeURIComponent(el('n_gw').value)+'&dns='+encodeURIComponent(el('n_dns').value);}
+async function netSave(rb){try{var r=await(await fetch('/api/net?'+netQ(),{cache:'no-store'})).json();
+ if(!r.ok){el('netmsg').textContent='Error: '+(r.err||'?');return;}
+ if(rb){var host=(el('n_host').value||'owon').trim();var url='http://'+host+'.local/';waitRedirect(url,'Apply & reboot...');try{await fetch('/reboot',{method:'POST'});}catch(e){}}
+ else el('netmsg').textContent='Saved. Active after reboot.';
+}catch(e){el('netmsg').textContent='Error: '+e;}}
+el('netSave').onclick=function(){netSave(false);};
+el('netReboot').onclick=function(){netSave(true);};
+async function checkCrash(){try{var j=await(await fetch('/api/crash',{cache:'no-store'})).json();
+ if(j.unclean){el('crashlog').textContent=j.log||'(no log)';el('crashovl').classList.add('show');}}catch(e){}}
+el('crashDismiss').onclick=function(){el('crashovl').classList.remove('show');fetch('/api/crash?clear=1',{cache:'no-store'}).catch(function(){});};
+(function(){var sw=el('sparkwrap');if(!sw)return;
+ try{var h=localStorage.getItem('xdm_graphh');if(h)sw.style.height=h+'px';}catch(e){}
+ if(window.ResizeObserver){var ro=new ResizeObserver(function(){drawChart();try{localStorage.setItem('xdm_graphh',Math.round(sw.clientHeight));}catch(e){}});ro.observe(sw);}
+ sw.addEventListener('wheel',function(e){e.preventDefault();yZoom(e.deltaY<0?0.85:1.18);},{passive:false});})();
+el('ymode').onclick=function(e){var m=e.target.getAttribute('data-y');if(m)setYmode(m);};
+el('yin').onclick=function(){yZoom(0.8);};
+el('yout').onclick=function(){yZoom(1.25);};
+applyYmodeUI();
+loadTheme();applyUmode();buildTabs();buildSubs();checkCrash();
+setInterval(function(){if(trig=='auto'&&!hold)reading();},250);
+setInterval(status,1500);status();reading();
+</script></body></html>

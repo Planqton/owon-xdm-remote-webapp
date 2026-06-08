@@ -19,7 +19,7 @@ LAST_HOST_FILE="$SCRIPT_DIR/.owon_last_host"
 BT="OWON XDM1041 Remote"
 
 # App set = OTA-safe (good/ snapshot, auto-rollback)
-APP_FILES=(dbg.py ota.py recovery.py wifi_manager.py app.py)
+APP_FILES=(dbg.py ota.py recovery.py wifi_manager.py page.html app.py)
 # Bootloader / trust-root = USB only (not rollback-protected)
 CORE_FILES=(wd.py main.py)
 FILES=("${CORE_FILES[@]}" "${APP_FILES[@]}")
