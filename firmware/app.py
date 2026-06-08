@@ -76,7 +76,7 @@ TABS = [
 ]
 DEFAULT_MODE = 'VDC'
 
-CODE_TIMESTAMP = "2026-06-06 (app v10: english + factory)"
+CODE_TIMESTAMP = "2026-06-06 (app v11: crash-log + range-graph)"
 
 # ─── Globals ──────────────────────────────────────────────────────────────────────
 uart_comm = None
@@ -558,6 +558,14 @@ button:disabled{opacity:.4;cursor:not-allowed}
  </div>
 </div></div>
 <div class="wait" id="waitovl"><div><div class="sp"></div><h2 id="waitt">Rebooting...</h2><p id="waitm"></p><a id="waitlink" href="#">open</a></div></div>
+<div class="ovl" id="crashovl"><div class="dlg">
+ <div class="dlgtitle"><b>&#9888; OWON ESP did not shut down properly</b></div>
+ <div class="spane active">
+  <p class="hint">The previous session ended unexpectedly (crash, hang or power loss). Last log:</p>
+  <pre id="crashlog" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;max-height:50vh;overflow:auto;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;color:var(--mut)"></pre>
+  <div class="actions"><button class="primary" id="crashDismiss">Dismiss</button></div>
+ </div>
+</div></div>
 <script>
 var CFG=__CFG__;
 function waitRedirect(url,title){
@@ -601,14 +609,20 @@ function drawChart(){var c=el('spark');var w=c.width=c.clientWidth,h=c.height=c.
  x.font='11px system-ui';
  if(hist.length<2){x.strokeStyle=CL;x.strokeRect(PL,PT,pw,ph);return;}
  var vs=hist.map(function(p){return p.v;});
- var mn=Math.min.apply(null,vs),mx=Math.max.apply(null,vs);
- if(mx-mn<1e-12){var pad=Math.abs(mn)*0.05+1e-6;mn-=pad;mx+=pad;}
+ // Y axis follows the meter RANGE (e.g. 5V range -> +/-5V), not the data.
+ var rb=runit(curRange),fs=null;
+ if(rb){var rnum=parseFloat(curRange);if(!isNaN(rnum)&&rb.f)fs=Math.abs(rnum/rb.f);}
+ var mn,mx;
+ if(fs){ if(cur.g=='V'||cur.g=='A'){mn=-fs;mx=fs;}else{mn=0;mx=fs;} }
+ else{ mn=Math.min.apply(null,vs);mx=Math.max.apply(null,vs);
+  if(mx-mn<1e-12){var pad=Math.abs(mn)*0.05+1e-6;mn-=pad;mx+=pad;} }
+ function tlab(val){if(fs){var d=val*rb.f,a=Math.abs(d);return d.toFixed(a>=100?1:a>=10?2:3);}return fmt(val,cur.g).n;}
  var t1=hist[hist.length-1].t,t0=hist[0].t,span=Math.max(t1-t0,1);
  // horizontal grid + Y labels
  x.textAlign='right';x.textBaseline='middle';var N=4;
  for(var i=0;i<=N;i++){var fy=i/N,yy=PT+ph*fy,val=mx-(mx-mn)*fy;
   x.strokeStyle=CL;x.globalAlpha=.5;x.beginPath();x.moveTo(PL,yy);x.lineTo(PL+pw,yy);x.stroke();x.globalAlpha=1;
-  x.fillStyle=CM;x.fillText(fmt(val,cur.g).n,PL-5,yy);}
+  x.fillStyle=CM;x.fillText(tlab(val),PL-5,yy);}
  // vertical grid + time labels
  x.textAlign='center';x.textBaseline='top';var M=4;
  for(var k=0;k<=M;k++){var fx=k/M,xx=PL+pw*fx;
@@ -616,11 +630,12 @@ function drawChart(){var c=el('spark');var w=c.width=c.clientWidth,h=c.height=c.
   var sec=(t1-(t0+span*fx))/1000;
   x.fillStyle=CM;x.fillText(sec>0.5?('-'+sec.toFixed(0)+'s'):'now',xx,PT+ph+4);}
  // unit (top-left) + border
- x.textAlign='left';x.textBaseline='top';x.fillStyle=CM;x.fillText(fmt(mx,cur.g).u,3,PT-1);
+ x.textAlign='left';x.textBaseline='top';x.fillStyle=CM;x.fillText(fs?rb.u:fmt(mx,cur.g).u,3,PT-1);
  x.strokeStyle=CL;x.strokeRect(PL,PT,pw,ph);
  // data line
  x.strokeStyle=CA;x.lineWidth=2;x.beginPath();
  hist.forEach(function(p,i){var px=PL+(p.t-t0)/span*pw,py=PT+ph-(p.v-mn)/(mx-mn)*ph;
+  if(py<PT)py=PT;if(py>PT+ph)py=PT+ph;
   i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();}
 function setReading(j){var f=fmt(j.value,cur.g);var ve=el('val');
  ve.textContent=f.n;el('unit').textContent=f.u;ve.className='val'+(hold?' hold':'')+(f.n=='OL'?' ol':'');
@@ -704,7 +719,10 @@ async function netSave(rb){try{var r=await(await fetch('/api/net?'+netQ(),{cache
 }catch(e){el('netmsg').textContent='Error: '+e;}}
 el('netSave').onclick=function(){netSave(false);};
 el('netReboot').onclick=function(){netSave(true);};
-loadTheme();applyUmode();buildTabs();buildSubs();
+async function checkCrash(){try{var j=await(await fetch('/api/crash',{cache:'no-store'})).json();
+ if(j.unclean){el('crashlog').textContent=j.log||'(no log)';el('crashovl').classList.add('show');}}catch(e){}}
+el('crashDismiss').onclick=function(){el('crashovl').classList.remove('show');fetch('/api/crash?clear=1',{cache:'no-store'}).catch(function(){});};
+loadTheme();applyUmode();buildTabs();buildSubs();checkCrash();
 setInterval(function(){if(trig=='auto'&&!hold)reading();},250);
 setInterval(status,1500);status();reading();
 </script></body></html>"""
@@ -791,6 +809,34 @@ def serve_factory(cl, q):
         pass
     time.sleep_ms(400)
     machine.reset()
+
+
+def serve_crash(cl, q):
+    """Report whether the last session ended uncleanly + the persistent crash log.
+    ?clear=1 clears the unclean flag (UI calls this after showing the notice)."""
+    import os
+    if ota.qparam(q, 'clear') == '1':
+        try:
+            os.remove('unclean.flag')
+        except Exception:
+            pass
+        ota.send(cl, '{"ok":true}', "application/json")
+        return
+    unclean = 0
+    try:
+        os.stat('unclean.flag')
+        unclean = 1
+    except Exception:
+        unclean = 0
+    txt = ''
+    try:
+        with open('crash.log') as f:
+            txt = f.read()
+    except Exception:
+        txt = ''
+    txt = (txt.replace('\\', '\\\\').replace('"', '\\"')
+              .replace('\r', '').replace('\t', '    ').replace('\n', '\\n'))
+    ota.send(cl, '{{"unclean":{},"log":"{}"}}'.format(unclean, txt), "application/json")
 
 
 def serve_page(cl):
@@ -987,6 +1033,8 @@ def web_server(ip):
                     serve_net_get(cl)
             elif path == '/api/factory':
                 serve_factory(cl, q)
+            elif path == '/api/crash':
+                serve_crash(cl, q)
             elif path in ('/api/scpi', '/cmd'):
                 serve_scpi(cl, q)
             else:

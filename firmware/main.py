@@ -37,6 +37,21 @@ def _wr(n, v):
         pass
 
 
+def _append_crash(text):
+    """Append a crash/boot note to the persistent crash log (capped ~3 KB)."""
+    try:
+        old = ''
+        try:
+            with open('crash.log') as f:
+                old = f.read()
+        except Exception:
+            old = ''
+        with open('crash.log', 'w') as f:
+            f.write((old + text + '\n')[-3000:])
+    except Exception:
+        pass
+
+
 def _restore_good():
     """Restore the complete app set from /good/ (chunked, low-mem).
     Returns: number of restored files (0 = no snapshot)."""
@@ -61,11 +76,16 @@ def _restore_good():
 
 
 try:
-    _cnt = int(_rd('boot.cnt') or '0')
+    _prev = int(_rd('boot.cnt') or '0')
 except Exception:
-    _cnt = 0
-_cnt += 1
+    _prev = 0
+_cnt = _prev + 1
 _wr('boot.cnt', _cnt)
+# A previous boot that never reached "healthy" (crash, hang/WDT, or power loss
+# in the first seconds) -> mark unclean so the UI can show a notice.
+if _prev > 0:
+    _wr('unclean.flag', str(_prev))
+    _append_crash('[boot] unclean restart (previous boot.cnt={})'.format(_prev))
 
 if _cnt >= ROLLBACK_AT:
     _wr('boot.cnt', '0')
@@ -94,19 +114,23 @@ else:
         import app
         app.run()
     except Exception as e:
+        tb = repr(e)
         try:
-            import sys, io, dbg
+            import sys, io
             buf = io.StringIO()
             sys.print_exception(e, buf)
-            for ln in buf.getvalue().split('\n'):
+            tb = buf.getvalue()
+        except Exception:
+            pass
+        _append_crash('[crash] ' + tb)
+        _wr('unclean.flag', 'crash')
+        try:
+            import dbg
+            for ln in tb.split('\n'):
                 if ln.strip():
                     dbg.log('CRASH', ln)
         except Exception:
-            try:
-                import dbg
-                dbg.log('CRASH', repr(e))
-            except Exception:
-                print('CRASH:', e)
+            pass
         try:
             import recovery
             recovery.run(e)

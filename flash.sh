@@ -28,6 +28,7 @@ MPY_BIN="$SCRIPT_DIR/ESP32_GENERIC-v1.28.0.bin"
 MPY_URL="https://micropython.org/resources/firmware/ESP32_GENERIC-20260406-v1.28.0.bin"
 
 HAS_WT=0; command -v whiptail >/dev/null 2>&1 && HAS_WT=1
+[ "${OWON_NOTUI:-0}" = "1" ] && HAS_WT=0   # force plain-text prompts (scripting/CI)
 
 DEVICES=()
 
@@ -67,7 +68,11 @@ need_tools(){
 }
 
 # ── ESP detection (universal: /ota exists in app, recovery AND AP portal) ─────────
-is_esp(){ curl -s --max-time "${2:-2}" "http://$1/ota" 2>/dev/null | grep -q "OTA Update"; }
+is_esp(){ local t="${2:-3}"
+  # fast: tiny JSON (app mode); fallback: /ota page (recovery/AP mode)
+  curl -s --max-time "$t" "http://$1/api/reading" 2>/dev/null | grep -q '"ok"' && return 0
+  curl -s --max-time "$t" "http://$1/ota" 2>/dev/null | grep -q "OTA Update"
+}
 
 get_ip(){
   local ip
@@ -97,11 +102,11 @@ collect_devices(){
   local cands=(); [ -f "$LAST_HOST_FILE" ] && cands+=("$(cat "$LAST_HOST_FILE")")
   cands+=(owon.local owon1.local 192.168.4.1)
   for h in "${cands[@]}"; do [ -n "$h" ] || continue
-    if is_esp "$h" 2; then ip="$(get_ip "$h")"; case "$seen" in *" $ip "*) ;; *) DEVICES+=("$ip"); seen="$seen$ip ";; esac; fi
+    if is_esp "$h" 4; then ip="$(get_ip "$h")"; case "$seen" in *" $ip "*) ;; *) DEVICES+=("$ip"); seen="$seen$ip ";; esac; fi
   done
   base="$(subnet_base)"; echo "Scanning ${base}.1-254 ..."
   tmp="$(mktemp)"
-  for n in $(seq 1 254); do ( is_esp "${base}.${n}" 1 && echo "${base}.${n}" >> "$tmp" ) & (( n % 50 == 0 )) && wait; done
+  for n in $(seq 1 254); do ( is_esp "${base}.${n}" 2 && echo "${base}.${n}" >> "$tmp" ) & (( n % 60 == 0 )) && wait; done
   wait
   while read -r ip; do [ -n "$ip" ] || continue; case "$seen" in *" $ip "*) ;; *) DEVICES+=("$ip"); seen="$seen$ip ";; esac; done < <(sort -t. -k4 -n "$tmp" 2>/dev/null)
   rm -f "$tmp"
