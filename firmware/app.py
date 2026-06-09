@@ -37,6 +37,8 @@ from wifi_manager import WifiManager
 import ota
 from dbg import log
 
+_BOOT_TICKS = time.ticks_ms()   # for the console /uptime command
+
 # ─── UART / Pins ────────────────────────────────────────────────────────────────--
 UART_NUM, BAUDRATE, TX_PIN, RX_PIN, LED_PIN = 2, 115200, 17, 16, 2
 
@@ -733,6 +735,125 @@ def serve_scpi(cl, q):
     ota.send(cl, '{{"sent":"{}","resp":"{}"}}'.format(scpi, resp), "application/json")
 
 
+def _sys_exec(code):
+    """Run a MicroPython snippet from the console /exec command, capturing print()."""
+    import machine
+    buf = []
+
+    def _p(*a, **k):
+        buf.append(k.get('sep', ' ').join(str(x) for x in a))
+
+    g = {'print': _p, 'gc': gc, 'os': os, 'time': time, 'network': network,
+         'machine': machine, 'ubinascii': ubinascii}
+    try:
+        r = eval(code, g)                      # expression → return its value
+        out = "\n".join(buf)
+        if r is not None:
+            out = (out + "\n" if out else "") + repr(r)
+        return out or "(ok)"
+    except SyntaxError:
+        try:
+            exec(code, g)                      # statements → capture prints
+            return "\n".join(buf) or "(ok)"
+        except Exception as e:
+            return "ERR " + repr(e)
+    except Exception as e:
+        return "ERR " + repr(e)
+
+
+def serve_sys(cl, method, body):
+    """ESP-level '/' commands typed in the console (POST body holds the raw command)."""
+    import json
+    try:
+        cmd = body.decode() if isinstance(body, (bytes, bytearray)) else (body or '')
+    except Exception:
+        cmd = ''
+    cmd = cmd.strip()
+    if not cmd.startswith('/'):
+        ota.send(cl, json.dumps({"resp": "ERR not a / command"}), "application/json")
+        return
+    p = cmd[1:].split(' ', 1)
+    op = p[0].lower()
+    arg = p[1].strip() if len(p) > 1 else ''
+    resp = ''
+    try:
+        if op == 'help':
+            resp = ("/help  /mem  /df  /files  /ip  /uptime  /gc  /reboot  "
+                    "/factory yes  /exec <python>\n(no leading slash = SCPI to the meter)")
+        elif op == 'mem':
+            gc.collect()
+            free, alloc = gc.mem_free(), gc.mem_alloc()
+            resp = "free {} B   alloc {} B   total {} B".format(free, alloc, free + alloc)
+        elif op == 'df':
+            s = os.statvfs('/')
+            total, free = s[0] * s[2], s[0] * s[3]
+            resp = "flash  free {} KB / total {} KB".format(free // 1024, total // 1024)
+        elif op == 'files':
+            rows = []
+            for fn in sorted(os.listdir()):
+                try:
+                    st = os.stat(fn)
+                    rows.append(fn + "/" if st[0] & 0x4000 else "{}   {} B".format(fn, st[6]))
+                except Exception:
+                    rows.append(fn)
+            resp = "\n".join(rows)
+        elif op == 'ip':
+            try:
+                sta = network.WLAN(network.STA_IF)
+                ip = sta.ifconfig()[0]
+                mac = ubinascii.hexlify(sta.config('mac'), ':').decode()
+            except Exception:
+                ip, mac = '?', '?'
+            try:
+                host = network.hostname()
+            except Exception:
+                host = '?'
+            resp = "ip {}   host {}.local   mac {}".format(ip, host, mac)
+        elif op == 'uptime':
+            sec = time.ticks_diff(time.ticks_ms(), _BOOT_TICKS) // 1000
+            resp = "up {}h {}m {}s".format(sec // 3600, (sec % 3600) // 60, sec % 60)
+        elif op == 'gc':
+            before = gc.mem_free()
+            gc.collect()
+            after = gc.mem_free()
+            resp = "freed {} B   (free {} B)".format(after - before, after)
+        elif op == 'reboot':
+            ota.send(cl, json.dumps({"resp": "(rebooting…)"}), "application/json")
+            try:
+                cl.close()
+            except Exception:
+                pass
+            import machine
+            time.sleep_ms(300)
+            machine.reset()
+            return
+        elif op == 'factory':
+            if arg != 'yes':
+                resp = "type  /factory yes  to confirm (wipes WiFi + network, reboots to setup AP)"
+            else:
+                ota.send(cl, json.dumps({"resp": "(factory reset…)"}), "application/json")
+                try:
+                    cl.close()
+                except Exception:
+                    pass
+                import machine
+                for fn in ('wifi.dat', 'net.dat'):
+                    try:
+                        os.remove(fn)
+                    except Exception:
+                        pass
+                time.sleep_ms(300)
+                machine.reset()
+                return
+        elif op == 'exec':
+            resp = _sys_exec(arg) if arg else "usage: /exec <python>   e.g. /exec print(gc.mem_free())"
+        else:
+            resp = "unknown: /{}   (try /help)".format(op)
+    except Exception as e:
+        resp = "ERR " + repr(e)
+    ota.send(cl, json.dumps({"resp": resp}), "application/json")
+
+
 def scpi_server():
     """Raw SCPI-TCP server on port 5025 for PyVISA (TCPIP::host::5025::SOCKET).
     Line-based ('<cmd>\\n'); a command ending in '?' returns a reply, else write."""
@@ -833,6 +954,8 @@ def web_server(ip):
                 serve_crash(cl, q)
             elif path in ('/api/scpi', '/cmd'):
                 serve_scpi(cl, q)
+            elif path == '/sys':
+                serve_sys(cl, method, body)
             else:
                 serve_page(cl)
         except Exception as e:

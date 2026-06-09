@@ -58,6 +58,15 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .val{font-size:clamp(48px,11vw,140px);font-weight:800;font-variant-numeric:tabular-nums;color:var(--acc);line-height:1}
 .val.hold{color:var(--warn)}.val.ol{color:var(--bad)}
 .unit{font-size:clamp(20px,3vw,42px);color:var(--mut);margin-left:10px}
+.detflag{position:absolute;top:10px;right:16px;display:none;font-size:clamp(34px,6vw,64px);font-weight:900;color:var(--warn);line-height:1}
+.detflag.on{display:block;animation:detpulse 1s ease-in-out infinite}
+@keyframes detpulse{0%,100%{opacity:1}50%{opacity:.3}}
+.hrow{display:flex;align-items:center;gap:6px}.hrow h3{margin-bottom:0}
+.info{display:inline-flex;align-items:center;justify-content:center;width:15px;height:15px;border:1px solid var(--mut);border-radius:50%;color:var(--mut);font:italic 700 10px/1 Georgia,serif;cursor:pointer;flex:0 0 auto;vertical-align:middle;user-select:none}
+.info:hover{color:var(--acc);border-color:var(--acc)}
+.no-tips .info{display:none}
+.tip{position:fixed;max-width:262px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;color:var(--txt);box-shadow:0 10px 30px rgba(0,0,0,.55);z-index:120;display:none}
+.tip.show{display:block}.tip b{color:var(--acc)}
 .acdc{font-style:normal;font-size:.6em;vertical-align:.12em;margin-left:2px;opacity:.8}
 .modeline{margin-top:10px;color:var(--mut);font-size:14px;letter-spacing:1px}
 .sparkwrap{width:96%;height:150px;margin-top:14px;resize:vertical;overflow:hidden;min-height:90px;max-height:75vh;position:relative}
@@ -139,6 +148,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
  <section class="stage">
   <div class="submodes" id="submodes"></div>
   <div class="readout">
+   <span id="detflag" class="detflag">!</span>
    <div class="reading"><span id="val" class="val">--</span><span id="unit" class="unit"></span></div>
    <div class="modeline" id="modeline"></div>
    <div class="cont" id="cont"><svg viewBox="0 0 280 56" aria-hidden="true">
@@ -170,10 +180,23 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <div class="grp"><h3 data-i18n="range">Range</h3>
    <div class="rangebox"><button id="rdown">&#9660;</button><span id="rangelbl">–</span><button id="rup">&#9650;</button></div>
    <button id="rauto" class="wide" data-i18n="autob">Auto</button></div>
-  <div class="grp"><h3 data-i18n="trigger">Trigger</h3><div class="seg" id="trig">
+  <div class="grp"><div class="hrow"><h3 data-i18n="trigger">Trigger</h3><span class="info" data-tip="tip_trig">i</span></div><div class="seg" id="trig">
    <button data-t="auto" class="active" data-i18n="t_auto">Auto</button><button data-t="single" data-i18n="t_single">Single</button></div>
    <button id="trigbtn" class="wide" disabled style="margin-top:8px" data-i18n="trigbtn">Trigger &#9658;</button></div>
   <div class="grp"><h3 data-i18n="display">Display</h3><button id="hold" class="wide hold" data-i18n="hold">Hold</button></div>
+  <div class="grp"><div class="hrow"><h3 data-i18n="cond">Condition</h3><span class="info" data-tip="tip_cond">i</span></div>
+   <label class="swrow"><input type="checkbox" id="cd_on"><span data-i18n="cd_enable">Enable</span></label>
+   <div class="seg" id="cdmode" style="margin-top:4px"><button data-m="below" data-i18n="bd_below">&#9660; Below</button><button data-m="above" class="active" data-i18n="bd_above">&#9650; Above</button><button data-m="equal" data-i18n="bd_equal">= Equal</button></div>
+   <div class="cthr" style="display:flex;align-items:center;justify-content:center;gap:4px;margin-top:8px"><span data-i18n="bd_val">Value</span><input id="cd_thr" type="number" step="any"><span id="cd_unit">V</span></div>
+   <div class="cthr" id="cd_tolrow" style="display:none;align-items:center;justify-content:center;gap:4px;margin-top:6px"><span data-i18n="bd_tol">&plusmn; Tolerance</span><input id="cd_tol" type="number" step="any" min="0"><span id="cd_tolunit">V</span><span class="info" data-tip="tip_tol">i</span></div>
+   <div class="cthr" style="display:flex;align-items:center;gap:5px;margin:11px 0 3px"><span data-i18n="cd_onhit">On match</span><span class="info" data-tip="tip_hit">i</span></div>
+   <label class="swrow"><input type="checkbox" id="cd_flag" checked><span data-i18n="cd_aflag">Show &#10071; on reading</span></label>
+   <label class="swrow"><input type="checkbox" id="cd_beep" checked><span data-i18n="cd_abeep">Beep</span></label>
+   <label class="swrow"><input type="checkbox" id="cd_freeze"><span data-i18n="cd_afreeze">Freeze reading (Hold)</span></label>
+   <div class="cthr" style="display:flex;align-items:center;gap:5px;margin:11px 0 3px"><span data-i18n="cd_behav">Behavior</span><span class="info" data-tip="tip_behav">i</span></div>
+   <div class="seg" id="cdrep"><button data-r="cont" class="active" data-i18n="cd_cont">Continuous</button><button data-r="once" data-i18n="cd_once">Once</button></div>
+   <p class="hint" id="cdstat" style="margin:6px 0 0"></p>
+   <p class="hint" data-i18nh="hint_cond" style="margin:6px 0 0"></p></div>
  </aside>
 </div>
 <div class="ovl" id="ovl"><div class="dlg">
@@ -197,6 +220,10 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <div class="grp" style="margin-top:16px"><h3 data-i18n="acdc">AC/DC indicator</h3><div class="seg" id="acdcmode">
    <button data-a="sym">Symbol &#9155;&#8767;</button><button data-a="tilde">Tilde = ~</button><button data-a="text">Text DC/AC</button><button data-a="off" data-i18n="a_off">Off</button></div>
    <p class="hint" data-i18nh="hint_acdc">Mark V and A readings as DC or AC next to the unit. &bdquo;Symbol&ldquo; uses the IEC marks (&#9155; / &#8767;) &ndash; switch to Tilde or Text if they don&rsquo;t render on your device.</p>
+  </div>
+  <div class="grp" style="margin-top:16px"><h3 data-i18n="help">Help</h3>
+   <label class="swrow"><input type="checkbox" id="sw_tips" checked><span data-i18n="show_tips">Show help icons (&#9432;)</span></label>
+   <p class="hint" data-i18nh="hint_tips">The small &#9432; icons next to controls open a short explanation when tapped. Turn them off here to hide them everywhere.</p>
   </div>
  </div>
  <div class="spane" data-p="network">
@@ -234,6 +261,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
  </div>
 </div></div>
 <div class="wait" id="waitovl"><div><div class="sp"></div><h2 id="waitt">Rebooting...</h2><p id="waitm"></p><a id="waitlink" href="#">open</a></div></div>
+<div class="tip" id="tip"></div>
 <div class="ovl" id="crashovl"><div class="dlg">
  <div class="dlgtitle"><b data-i18n="crashtitle">&#9888; OWON ESP did not shut down properly</b></div>
  <div class="spane active">
@@ -248,6 +276,10 @@ var LANG=(localStorage.getItem('xdm_lang')||'en');
 var I18N={
  sampling:{en:'Sampling',de:'Abtastrate'},range:{en:'Range',de:'Bereich'},trigger:{en:'Trigger',de:'Trigger'},
  t_single:{en:'Single',de:'Einzeln'},t_auto:{en:'Auto',de:'Auto'},trigbtn:{en:'Trigger ▸',de:'Auslösen ▸'},
+ cond:{en:'Condition',de:'Bedingung'},cd_enable:{en:'Enable',de:'Aktiv'},bd_below:{en:'▼ Below',de:'▼ Unter'},bd_above:{en:'▲ Above',de:'▲ Über'},bd_equal:{en:'= Equal',de:'= Gleich'},bd_val:{en:'Value',de:'Wert'},bd_tol:{en:'± Tolerance',de:'± Toleranz'},
+ cd_onhit:{en:'On match',de:'Bei Treffer'},cd_aflag:{en:'Show ❗ on reading',de:'❗ in der Anzeige'},cd_abeep:{en:'Beep',de:'Piepton'},cd_afreeze:{en:'Freeze reading (Hold)',de:'Anzeige einfrieren (Hold)'},
+ cd_behav:{en:'Behavior',de:'Verhalten'},cd_cont:{en:'Continuous',de:'Dauernd'},cd_once:{en:'Once',de:'Einmalig'},cd_watch:{en:'Watching…',de:'Überwacht…'},cd_hit:{en:'match',de:'Treffer'},
+ help:{en:'Help',de:'Hilfe'},show_tips:{en:'Show help icons (ⓘ)',de:'Hilfe‑Symbole zeigen (ⓘ)'},
  display:{en:'Display',de:'Anzeige'},hold:{en:'Hold',de:'Halten'},autob:{en:'Auto',de:'Auto'},
  yaxis:{en:'Y‑axis',de:'Y‑Achse'},y_range:{en:'Range',de:'Bereich'},y_autofit:{en:'Auto‑fit',de:'Auto‑Fit'},y_manual:{en:'Manual',de:'Manuell'},
  yhint:{en:'wheel over graph to zoom',de:'Mausrad über Graph zum Zoomen'},reset:{en:'Reset',de:'Zurücksetzen'},
@@ -281,6 +313,13 @@ var I18N={
  Resistance:{en:'Resistance',de:'Widerstand'},Continuity:{en:'Continuity',de:'Durchgang'},Capacitance:{en:'Capacitance',de:'Kapazität'},Frequency:{en:'Frequency',de:'Frequenz'},Temperature:{en:'Temperature',de:'Temperatur'},Diode:{en:'Diode',de:'Diode'}
 };
 var I18NH={
+ hint_cond:{en:'Watches the live value (~4/s) against the threshold (base unit on the right) and reacts on a match. Continuous = react while the condition holds (steady tone); Once = react each time it enters the condition (short blip, ideal with Freeze). Keeps polling even in Single mode; Hold pauses it.',de:'Überwacht den Messwert (~4/s) gegen die Schwelle (Basiseinheit rechts) und reagiert bei einem Treffer. Dauernd = reagiert, solange die Bedingung gilt (Dauerton); Einmalig = reagiert bei jedem Eintritt in die Bedingung (kurzer Piep, ideal mit Einfrieren). Misst auch im Einzeln‑Modus weiter; „Halten“ pausiert.'},
+ hint_tips:{en:'The small ⓘ icons next to controls open a short explanation when tapped. Turn them off here to hide them everywhere.',de:'Die kleinen ⓘ‑Symbole neben den Bedienelementen öffnen beim Antippen eine kurze Erklärung. Hier abschalten, um sie überall auszublenden.'},
+ tip_trig:{en:'How often it samples. <b>Auto</b>: free-running (~4/s). <b>Single</b>: one reading per press of “Trigger ▸”.',de:'Wie oft gemessen wird. <b>Auto</b>: laufend (~4/s). <b>Einzeln</b>: ein Messwert pro Druck auf „Auslösen ▸“.'},
+ tip_cond:{en:'Watches the reading and reacts on a match. Signed compare: <b>Below</b> = value < target (e.g. “Below −12” hits at −12.1), <b>Above</b> = value > target, <b>Equal</b> = within target ± tolerance. Target is in the base unit on the right.',de:'Überwacht den Messwert und reagiert bei einem Treffer. Vergleich mit Vorzeichen: <b>Unter</b> = Messwert < Wert (z. B. „Unter −12“ trifft bei −12,1), <b>Über</b> = Messwert > Wert, <b>Gleich</b> = im Bereich Wert ± Toleranz. Wert in der Basiseinheit rechts.'},
+ tip_tol:{en:'The window around the value: match when |reading − value| ≤ tolerance (value−tol … value+tol). Only for “Equal”. <b>Tolerance 0 almost never fires.</b>',de:'Das Fenster um den Wert: Treffer, wenn |Messwert − Wert| ≤ Toleranz (Wert−Tol … Wert+Tol). Nur bei „Gleich“. <b>Toleranz 0 löst praktisch nie aus.</b>'},
+ tip_hit:{en:'What happens on a match (mix freely): <b>❗ on reading</b> shows a ❗, <b>Beep</b> sounds a tone, <b>Freeze</b> latches the reading (like Hold).',de:'Was bei einem Treffer passiert (frei kombinierbar): <b>❗ in der Anzeige</b> blendet ein ❗ ein, <b>Piepton</b> gibt einen Ton aus, <b>Einfrieren</b> hält den Messwert fest (wie „Halten“).'},
+ tip_behav:{en:'<b>Continuous</b>: reacts while the condition holds (steady tone, ❗ tracks live). <b>Once</b>: reacts each time it enters the condition (short blip) – ideal with Freeze.',de:'<b>Dauernd</b>: reagiert, solange die Bedingung gilt (Dauerton, ❗ folgt live). <b>Einmalig</b>: reagiert bei jedem Eintritt in die Bedingung (kurzer Piep) – ideal mit „Einfrieren“.'},
  hint_acdc:{en:'Mark V and A readings as DC or AC next to the unit. „Symbol“ uses the IEC marks (⏣ / ∿) – switch to Tilde or Text if they don’t render on your device.',de:'Markiert V‑ und A‑Messwerte als DC oder AC neben der Einheit. „Symbol“ nutzt die IEC‑Zeichen (⏣ / ∿) – auf Tilde oder Text wechseln, falls sie nicht angezeigt werden.'},
  hint_unit:{en:'„Match meter“: the unit follows the measurement range (e.g. 5 V range → shown in V) – just like the multimeter display.<br>„Auto-scale“: nicest unit for the value (mV/V/kV …).',de:'„Wie Messgerät“: die Einheit folgt dem Messbereich (z. B. 5 V‑Bereich → in V) – wie die Anzeige des Multimeters.<br>„Auto‑Skalierung“: schönste Einheit für den Wert (mV/V/kV …).'},
  hint_sound:{en:'Plays a tone while continuity is detected (below the threshold set on the Continuity page), like the multimeter buzzer. Browser audio plays from this device; with the second option the OWON’s own buzzer is switched along with the toggle.',de:'Spielt einen Ton bei Durchgang (unter der auf der Durchgangs‑Seite gesetzten Schwelle), wie der Multimeter‑Summer. Der Browser‑Ton kommt von diesem Gerät; mit der zweiten Option wird der OWON‑Summer mitgeschaltet.'},
@@ -305,6 +344,10 @@ function waitRedirect(url,title){
  },6000);
 }
 var cur={k:'VDC',g:'V'},trig='auto',hold=false,curTab=0,curRange='',lastLocalFn=0,unitMode=(localStorage.getItem('xdm_unitmode')||'range'),acdcMode=(localStorage.getItem('xdm_acdc')||'sym');
+var lastVal=null;
+var cdOn=false,cdMode=(localStorage.getItem('xdm_cdmode')||'above'),cdThr=parseFloat(localStorage.getItem('xdm_cdthr')),cdTol=parseFloat(localStorage.getItem('xdm_cdtol'));
+var cdFlag=localStorage.getItem('xdm_cdflag')!=='0',cdBeep=localStorage.getItem('xdm_cdbeep')!=='0',cdFreeze=localStorage.getItem('xdm_cdfreeze')==='1',cdRep=(localStorage.getItem('xdm_cdrep')||'cont'),condPrev=false;
+if(isNaN(cdThr))cdThr=0;if(isNaN(cdTol)||cdTol<0)cdTol=0;
 var yMode=(localStorage.getItem('xdm_ymode')||'range');if(yMode=='manual')yMode='range';var manMin=null,manMax=null;
 var showSps=localStorage.getItem('xdm_show_sps')!=='0',showMem=localStorage.getItem('xdm_show_mem')==='1';
 function applyTopbar(){el('sps').style.display=showSps?'':'none';el('mem').style.display=showMem?'':'none';}
@@ -360,7 +403,7 @@ function selSub(sm){cur=sm;lastLocalFn=performance.now();manMin=null;manMax=null
 function syncFn(k){if(!k||k==cur.k)return;if(performance.now()-lastLocalFn<2500)return;
  for(var i=0;i<CFG.length;i++){var ss=CFG[i].s;for(var n=0;n<ss.length;n++){if(ss[n].k==k){
   curTab=i;cur=ss[n];manMin=null;manMax=null;buildTabs();buildSubs();resetStats();return;}}}}
-function resetStats(){stats={min:null,max:null,sum:0,cnt:0};hist=[];el('min').textContent='–';el('max').textContent='–';el('avg').textContent='–';}
+function resetStats(){stats={min:null,max:null,sum:0,cnt:0};hist=[];el('min').textContent='–';el('max').textContent='–';el('avg').textContent='–';condReset();}
 function drawChart(){var c=el('spark');var w=c.width=c.clientWidth,h=c.height=c.clientHeight;var x=c.getContext('2d');
  var cs=getComputedStyle(document.documentElement),CL=(cs.getPropertyValue('--line')||'#243049').trim(),CM=(cs.getPropertyValue('--mut')||'#64748b').trim(),CA=(cs.getPropertyValue('--acc')||'#38bdf8').trim();
  x.clearRect(0,0,w,h);
@@ -391,7 +434,7 @@ function drawChart(){var c=el('spark');var w=c.width=c.clientWidth,h=c.height=c.
  hist.forEach(function(p,i){var px=PL+(p.t-t0)/span*pw,py=PT+ph-(p.v-mn)/(mx-mn)*ph;
   if(py<PT)py=PT;if(py>PT+ph)py=PT+ph;
   i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();}
-function setReading(j){var f=fmt(j.value,cur.g);var ve=el('val');
+function setReading(j){lastVal=j.value;var f=fmt(j.value,cur.g);var ve=el('val');
  ve.textContent=f.n;el('unit').innerHTML=f.u+acdcStr();
  ve.className='val'+(hold?' hold':'')+(f.n=='OL'?' ol':'');
  var ce=el('cont');
@@ -409,13 +452,14 @@ function setReading(j){var f=fmt(j.value,cur.g);var ve=el('val');
 var lastEspGood=0,lastMeterGood=0;
 function updateDiscon(){var now=performance.now(),d=el('discon');if(!d)return;
  if(now-lastEspGood>2500){d.textContent=t('disc_esp');d.className='discon show';}
- else if(trig=='auto'&&!hold&&now-lastMeterGood>3000){d.textContent=t('disc_meter');d.className='discon show meter';}
+ else if((trig=='auto'||cdOn)&&!hold&&now-lastMeterGood>3000){d.textContent=t('disc_meter');d.className='discon show meter';}
  else d.className='discon';}
 async function reading(){try{var r=await fetch('/api/reading',{cache:'no-store'});var j=await r.json();
  el('conn').className='conn on';lastEspGood=performance.now();if(j.ok)lastMeterGood=lastEspGood;if(!hold)setReading(j);
+ condEval(j.ok?j.value:null);
  if(j.sps!==undefined)el('sps').textContent=j.sps+' S/s';
  el('modeline').textContent=(j.ok?t('live'):t('stale'))+(j.raw?(' · '+j.raw):'');updateDiscon();
- }catch(e){el('conn').className='conn bad';el('modeline').textContent=t('unreach');updateDiscon();}}
+ }catch(e){el('conn').className='conn bad';el('modeline').textContent=t('unreach');condTone(false);condFlag(false);updateDiscon();}}
 async function status(){try{var r=await fetch('/api/status',{cache:'no-store'});var j=await r.json();
  lastEspGood=performance.now();el('idn').textContent=j.idn||'';el('rangelbl').textContent=j.range||'–';curRange=j.range||'';
  if(j.function)syncFn(j.function);
@@ -427,11 +471,47 @@ el('rate').onclick=function(e){var r=e.target.getAttribute('data-r');if(r)fetch(
 el('rup').onclick=function(){fetch('/api/range?set=up',{cache:'no-store'}).then(status);};
 el('rdown').onclick=function(){fetch('/api/range?set=down',{cache:'no-store'}).then(status);};
 el('rauto').onclick=function(){fetch('/api/range?set=auto',{cache:'no-store'}).then(status);};
-el('trig').onclick=function(e){var t=e.target.getAttribute('data-t');if(!t)return;trig=t;
- var bs=el('trig').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-t')==t);
- el('trigbtn').disabled=(t!='single');};
+el('trig').onclick=function(e){var tt=e.target.getAttribute('data-t');if(!tt)return;trig=tt;
+ var bs=el('trig').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-t')==tt);
+ el('trigbtn').disabled=(trig!='single');};
 el('trigbtn').onclick=function(){reading();};
-el('hold').onclick=function(){hold=!hold;el('hold').classList.toggle('active',hold);if(hold)beep(false);else lastMeterGood=performance.now();};
+// ---- Condition unit (merged level-trigger + value-detection) ----
+var condOsc=null,condG=null;
+function condInit(){if(condG)return;beepInit();if(!actx)return;try{condOsc=actx.createOscillator();condG=actx.createGain();condOsc.type='sine';condOsc.frequency.value=1760;condG.gain.value=0;condOsc.connect(condG);condG.connect(actx.destination);condOsc.start();}catch(e){}}
+function condTone(on){if(!condG&&!on)return;condInit();if(!actx||!condG)return;if(on&&actx.state=='suspended')actx.resume();condG.gain.setTargetAtTime(on?.05:0,actx.currentTime,.01);}
+function condBlip(){try{beepInit();if(!actx)return;if(actx.state=='suspended')actx.resume();var o=actx.createOscillator(),g=actx.createGain();o.type='sine';o.frequency.value=1320;g.gain.value=0;o.connect(g);g.connect(actx.destination);o.start();g.gain.setTargetAtTime(.06,actx.currentTime,.005);g.gain.setTargetAtTime(0,actx.currentTime+.13,.03);o.stop(actx.currentTime+.4);}catch(e){}}
+function condFlag(on){var f=el('detflag');if(f)f.classList.toggle('on',!!on);}
+function condUnitSet(){var g=cur.g||'';if(el('cd_unit'))el('cd_unit').textContent=g;if(el('cd_tolunit'))el('cd_tolunit').textContent=g;}
+function condStat(hit){var s=el('cdstat');if(!s)return;if(!cdOn){s.style.color='';s.textContent='';return;}s.style.color=hit?'var(--warn)':'';s.textContent=hit?('❗ '+t('cd_hit')):t('cd_watch');}
+function condFreeze(){hold=true;el('hold').classList.add('active');el('val').classList.add('hold');condTone(false);}
+function condEval(v){
+ if(!cdOn||v===null||Math.abs(v)>=1e9){condTone(false);condFlag(false);condPrev=false;if(cdOn)condStat(false);return;}
+ var on=cdMode=='below'?v<cdThr:cdMode=='above'?v>cdThr:Math.abs(v-cdThr)<=cdTol;
+ var edge=on&&!condPrev;condPrev=on;
+ if(cdRep=='cont'){
+  if(cdFlag)condFlag(on);
+  condTone(on&&cdBeep);
+  if(edge&&cdFreeze)condFreeze();
+  condStat(on);
+ }else{
+  if(edge){if(cdFlag)condFlag(true);if(cdBeep)condBlip();if(cdFreeze)condFreeze();condStat(true);}
+  else if(!on){if(cdFlag)condFlag(false);condStat(false);}
+ }}
+function condSync(){el('cd_tolrow').style.display=(cdMode=='equal')?'flex':'none';
+ var ms=el('cdmode').children;for(var i=0;i<ms.length;i++)ms[i].classList.toggle('active',ms[i].getAttribute('data-m')==cdMode);
+ var rs=el('cdrep').children;for(var j=0;j<rs.length;j++)rs[j].classList.toggle('active',rs[j].getAttribute('data-r')==cdRep);
+ el('cd_thr').value=cdThr;el('cd_tol').value=cdTol;el('cd_flag').checked=cdFlag;el('cd_beep').checked=cdBeep;el('cd_freeze').checked=cdFreeze;condUnitSet();}
+function condReset(){condPrev=false;condTone(false);condFlag(false);condUnitSet();if(cdOn)condStat(false);}
+el('cdmode').onclick=function(e){var m=e.target.getAttribute('data-m');if(!m)return;cdMode=m;try{localStorage.setItem('xdm_cdmode',m);}catch(e){}condPrev=false;condSync();};
+el('cdrep').onclick=function(e){var r=e.target.getAttribute('data-r');if(!r)return;cdRep=r;try{localStorage.setItem('xdm_cdrep',r);}catch(e){}condPrev=false;condSync();};
+el('cd_thr').oninput=function(){var v=parseFloat(this.value);if(!isNaN(v)){cdThr=v;try{localStorage.setItem('xdm_cdthr',v);}catch(e){}condPrev=false;}};
+el('cd_tol').oninput=function(){var v=parseFloat(this.value);if(!isNaN(v)&&v>=0){cdTol=v;try{localStorage.setItem('xdm_cdtol',v);}catch(e){}condPrev=false;}};
+el('cd_flag').onclick=function(){cdFlag=this.checked;try{localStorage.setItem('xdm_cdflag',cdFlag?'1':'0');}catch(e){}if(!cdFlag)condFlag(false);};
+el('cd_beep').onclick=function(){cdBeep=this.checked;try{localStorage.setItem('xdm_cdbeep',cdBeep?'1':'0');}catch(e){}if(!cdBeep)condTone(false);};
+el('cd_freeze').onclick=function(){cdFreeze=this.checked;try{localStorage.setItem('xdm_cdfreeze',cdFreeze?'1':'0');}catch(e){}};
+el('cd_on').onclick=function(){cdOn=this.checked;condPrev=false;if(cdOn){condInit();if(actx&&actx.state=='suspended')actx.resume();if(localStorage.getItem('xdm_cdthr')===null&&lastVal!==null&&Math.abs(lastVal)<1e9){cdThr=Number(lastVal.toPrecision(4));el('cd_thr').value=cdThr;}}else{condTone(false);condFlag(false);}condStat(false);};
+condSync();
+el('hold').onclick=function(){hold=!hold;el('hold').classList.toggle('active',hold);if(hold){beep(false);condTone(false);condFlag(false);}else lastMeterGood=performance.now();};
 el('rstStat').onclick=resetStats;
 // ---- Themes / Settings ----
 var VARS=['bg','panel','panel2','line','mut','txt','acc','accb','ok','warn','bad'];
@@ -520,6 +600,25 @@ applyYmodeUI();
 el('sw_sps').checked=showSps;el('sw_mem').checked=showMem;
 el('sw_sps').onchange=function(){showSps=el('sw_sps').checked;try{localStorage.setItem('xdm_show_sps',showSps?'1':'0');}catch(e){}applyTopbar();};
 el('sw_mem').onchange=function(){showMem=el('sw_mem').checked;try{localStorage.setItem('xdm_show_mem',showMem?'1':'0');}catch(e){}applyTopbar();};
+// ---- Help tooltips (ⓘ) ----
+var TIP=el('tip'),tipsOn=localStorage.getItem('xdm_tips')!=='0';
+function tipTxt(k){var o=I18NH[k];return o?(o[LANG]||o.en):k;}
+function showTip(ic){TIP.innerHTML=tipTxt(ic.getAttribute('data-tip'));TIP.classList.add('show');
+ var r=ic.getBoundingClientRect(),tw=TIP.offsetWidth,th=TIP.offsetHeight;
+ var left=r.right-tw;if(left+tw>innerWidth-8)left=innerWidth-8-tw;if(left<8)left=8;
+ var top=r.bottom+6;if(top+th>innerHeight-8)top=r.top-6-th;if(top<8)top=8;
+ TIP.style.left=left+'px';TIP.style.top=top+'px';TIP._k=ic;}
+function hideTip(){if(TIP){TIP.classList.remove('show');TIP._k=null;}}
+function applyTips(){document.body.classList.toggle('no-tips',!tipsOn);if(!tipsOn)hideTip();}
+el('sw_tips').checked=tipsOn;
+el('sw_tips').onchange=function(){tipsOn=el('sw_tips').checked;try{localStorage.setItem('xdm_tips',tipsOn?'1':'0');}catch(e){}applyTips();};
+applyTips();
+document.addEventListener('click',function(e){
+ var ic=(e.target&&e.target.classList&&e.target.classList.contains('info'))?e.target:null;
+ if(ic){e.preventDefault();e.stopPropagation();if(!tipsOn)return;if(TIP._k===ic)hideTip();else showTip(ic);return;}
+ if(TIP&&TIP.classList.contains('show')&&!TIP.contains(e.target))hideTip();
+},true);
+addEventListener('resize',hideTip);
 function applyBeepUi(){if(el('sw_beep'))el('sw_beep').checked=beepOn;if(el('sw_beepsync'))el('sw_beepsync').checked=beepSync;if(el('cb_sync'))el('cb_sync').checked=beepSync;var b=el('beepbtn');if(b){b.classList.toggle('on',beepOn);b.textContent=(beepOn?t('beepon'):t('beepoff'));}}
 function setBeepLocal(v){beepOn=v;try{localStorage.setItem('xdm_beep',v?'1':'0');}catch(e){}if(beepOn){beepInit();if(actx&&actx.state=='suspended')actx.resume();}else beep(false);applyBeepUi();}
 function setBeep(v){setBeepLocal(v);pushBuzzer();}
@@ -536,6 +635,6 @@ applyBeepUi();
 applyTopbar();
 lastEspGood=lastMeterGood=performance.now();
 loadTheme();applyUmode();applyAcdc();buildTabs();buildSubs();applyLang(LANG);checkCrash();
-setInterval(function(){if(trig=='auto'&&!hold)reading();},250);
+setInterval(function(){if((trig=='auto'||cdOn)&&!hold)reading();},250);
 setInterval(status,1500);status();reading();
 </script></body></html>

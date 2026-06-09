@@ -182,15 +182,35 @@ function msg(t){document.getElementById('msg').textContent=t;}
 
 _CONSOLE_PAGE = """<!DOCTYPE html><html><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>Console</title>
-<style>{{CSS}}</style></head><body><div class="card">
-<h1>Console</h1><div class="sub">Live log (RAM ring buffer). Auto-refreshing.</div>
+<style>{{CSS}}
+#cmd{flex:1;padding:10px;background:#0f172a;border:1px solid #334155;border-radius:10px;color:#e2e8f0;font-family:inherit;font-size:14px}
+#out{height:22vh}</style></head><body><div class="card">
+<h1>Console</h1><div class="sub">SCPI to the meter (MEAS?), or /-commands for the ESP (/help). Plus the live log.</div>
+<div style="display:flex;gap:8px;margin-bottom:12px">
+ <input id="cmd" placeholder="SCPI: MEAS? FUNC? CONF:VOLT:DC  ·  ESP: /help /mem /reboot" autocomplete="off" spellcheck="false">
+ <button class="btn up" onclick="snd()">Send</button></div>
+<pre id="out">SCPI (ending in ? = reply) goes to the meter. Lines starting with / are ESP commands — type /help.</pre>
 <pre id="log">…</pre>
-<button class="btn cl" onclick="clr()">Clear</button>
+<button class="btn cl" onclick="clr()">Clear log</button>
 <button class="btn rb" onclick="rb()">Reboot</button>
 <label style="font-size:13px;color:#94a3b8;margin-left:10px"><input type="checkbox" id="auto" checked> Auto-Scroll</label>
 {{NAV}}
 <script>
-var pre=document.getElementById('log');
+var pre=document.getElementById('log'),out=document.getElementById('out'),inp=document.getElementById('cmd');
+// keep colons literal; the server decodes + -> space and %3F -> ? (it does NOT decode %3A)
+function enc(c){return c.trim().replace(/&/g,'').replace(/ /g,'+').replace(/\\?/g,'%3F');}
+async function snd(){var c=inp.value;if(!c.trim())return;
+ out.textContent+='> '+c+'\\n';out.scrollTop=out.scrollHeight;
+ try{var r;
+  if(c.trim().charAt(0)==='/')r=await fetch('/sys',{method:'POST',body:c.trim(),cache:'no-store'});
+  else r=await fetch('/cmd?cmd='+enc(c),{cache:'no-store'});
+  var txt=await r.text();var j;
+  try{j=JSON.parse(txt);}catch(e){out.textContent+=txt+'\\n';out.scrollTop=out.scrollHeight;inp.value='';inp.focus();return;}
+  var resp=(j.resp!==undefined&&j.resp!=='')?j.resp:(j.ok===false?('ERR '+(j.err||'?')):'(ok)');
+  out.textContent+=resp+'\\n';
+ }catch(e){out.textContent+='ERR '+e+'\\n';}
+ out.scrollTop=out.scrollHeight;inp.value='';inp.focus();}
+inp.addEventListener('keydown',function(e){if(e.key==='Enter')snd();});
 async function upd(){try{var r=await fetch('/log',{cache:'no-store'});var t=await r.text();
  var atBottom=pre.scrollTop+pre.clientHeight>=pre.scrollHeight-20;
  pre.textContent=t||'(empty)';
