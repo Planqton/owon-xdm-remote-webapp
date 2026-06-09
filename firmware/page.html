@@ -67,6 +67,9 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .no-tips .info{display:none}
 .tip{position:fixed;max-width:262px;background:var(--panel2);border:1px solid var(--line);border-radius:10px;padding:10px 12px;font-size:12.5px;line-height:1.45;color:var(--txt);box-shadow:0 10px 30px rgba(0,0,0,.55);z-index:120;display:none}
 .tip.show{display:block}.tip b{color:var(--acc)}
+.gaugewrap{width:100%;max-width:540px;height:clamp(108px,20vh,224px);margin:0 auto 2px}
+.gauge{width:100%;height:100%;display:block}
+.gauge-off .gaugewrap{display:none}
 .acdc{font-style:normal;font-size:.6em;vertical-align:.12em;margin-left:2px;opacity:.8}
 .modeline{margin-top:10px;color:var(--mut);font-size:14px;letter-spacing:1px}
 .sparkwrap{width:96%;height:150px;margin-top:14px;resize:vertical;overflow:hidden;min-height:90px;max-height:75vh;position:relative}
@@ -149,6 +152,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <div class="submodes" id="submodes"></div>
   <div class="readout">
    <span id="detflag" class="detflag">!</span>
+   <div class="gaugewrap" id="gaugewrap"><canvas id="gauge" class="gauge"></canvas></div>
    <div class="reading"><span id="val" class="val">--</span><span id="unit" class="unit"></span></div>
    <div class="modeline" id="modeline"></div>
    <div class="cont" id="cont"><svg viewBox="0 0 280 56" aria-hidden="true">
@@ -217,6 +221,10 @@ button:disabled{opacity:.4;cursor:not-allowed}
    <label class="swrow"><input type="checkbox" id="sw_sps"><span data-i18n="show_sps">Show sampling rate (S/s)</span></label>
    <label class="swrow"><input type="checkbox" id="sw_mem"><span data-i18n="show_mem">Show memory usage (RAM)</span></label>
   </div>
+  <div class="grp" style="margin-top:16px"><h3 data-i18n="readout_h">Readout</h3>
+   <label class="swrow"><input type="checkbox" id="sw_gauge" checked><span data-i18n="show_gauge">Analog needle gauge (above the digits)</span></label>
+   <p class="hint" data-i18nh="hint_gauge">A moving-needle dial like an old analog multimeter, shown above the digital reading. The scale follows the active range; bipolar (DC V/A) is centre-zero.</p>
+  </div>
   <div class="grp" style="margin-top:16px"><h3 data-i18n="acdc">AC/DC indicator</h3><div class="seg" id="acdcmode">
    <button data-a="sym">Symbol &#9155;&#8767;</button><button data-a="tilde">Tilde = ~</button><button data-a="text">Text DC/AC</button><button data-a="off" data-i18n="a_off">Off</button></div>
    <p class="hint" data-i18nh="hint_acdc">Mark V and A readings as DC or AC next to the unit. &bdquo;Symbol&ldquo; uses the IEC marks (&#9155; / &#8767;) &ndash; switch to Tilde or Text if they don&rsquo;t render on your device.</p>
@@ -280,6 +288,7 @@ var I18N={
  cd_onhit:{en:'On match',de:'Bei Treffer'},cd_aflag:{en:'Show ❗ on reading',de:'❗ in der Anzeige'},cd_abeep:{en:'Beep',de:'Piepton'},cd_afreeze:{en:'Freeze reading (Hold)',de:'Anzeige einfrieren (Hold)'},
  cd_behav:{en:'Behavior',de:'Verhalten'},cd_cont:{en:'Continuous',de:'Dauernd'},cd_once:{en:'Once',de:'Einmalig'},cd_watch:{en:'Watching…',de:'Überwacht…'},cd_hit:{en:'match',de:'Treffer'},
  help:{en:'Help',de:'Hilfe'},show_tips:{en:'Show help icons (ⓘ)',de:'Hilfe‑Symbole zeigen (ⓘ)'},
+ readout_h:{en:'Readout',de:'Anzeige'},show_gauge:{en:'Analog needle gauge (above the digits)',de:'Analog‑Nadelanzeige (über den Ziffern)'},
  display:{en:'Display',de:'Anzeige'},hold:{en:'Hold',de:'Halten'},autob:{en:'Auto',de:'Auto'},
  yaxis:{en:'Y‑axis',de:'Y‑Achse'},y_range:{en:'Range',de:'Bereich'},y_autofit:{en:'Auto‑fit',de:'Auto‑Fit'},y_manual:{en:'Manual',de:'Manuell'},
  yhint:{en:'wheel over graph to zoom',de:'Mausrad über Graph zum Zoomen'},reset:{en:'Reset',de:'Zurücksetzen'},
@@ -315,6 +324,7 @@ var I18N={
 var I18NH={
  hint_cond:{en:'Watches the live value (~4/s) against the threshold (base unit on the right) and reacts on a match. Continuous = react while the condition holds (steady tone); Once = react each time it enters the condition (short blip, ideal with Freeze). Keeps polling even in Single mode; Hold pauses it.',de:'Überwacht den Messwert (~4/s) gegen die Schwelle (Basiseinheit rechts) und reagiert bei einem Treffer. Dauernd = reagiert, solange die Bedingung gilt (Dauerton); Einmalig = reagiert bei jedem Eintritt in die Bedingung (kurzer Piep, ideal mit Einfrieren). Misst auch im Einzeln‑Modus weiter; „Halten“ pausiert.'},
  hint_tips:{en:'The small ⓘ icons next to controls open a short explanation when tapped. Turn them off here to hide them everywhere.',de:'Die kleinen ⓘ‑Symbole neben den Bedienelementen öffnen beim Antippen eine kurze Erklärung. Hier abschalten, um sie überall auszublenden.'},
+ hint_gauge:{en:'A moving-needle dial like an old analog multimeter, above the digital reading. The scale follows the active range; bipolar (DC V/A) is centre-zero, overload pegs the needle right.',de:'Ein Zeigerinstrument wie bei einem alten Analog‑Multimeter, über der digitalen Anzeige. Die Skala folgt dem aktiven Bereich; bipolar (DC V/A) ist mittig‑null, bei Überlauf schlägt der Zeiger rechts an.'},
  tip_trig:{en:'How often it samples. <b>Auto</b>: free-running (~4/s). <b>Single</b>: one reading per press of “Trigger ▸”.',de:'Wie oft gemessen wird. <b>Auto</b>: laufend (~4/s). <b>Einzeln</b>: ein Messwert pro Druck auf „Auslösen ▸“.'},
  tip_cond:{en:'Watches the reading and reacts on a match. Signed compare: <b>Below</b> = value < target (e.g. “Below −12” hits at −12.1), <b>Above</b> = value > target, <b>Equal</b> = within target ± tolerance. Target is in the base unit on the right.',de:'Überwacht den Messwert und reagiert bei einem Treffer. Vergleich mit Vorzeichen: <b>Unter</b> = Messwert < Wert (z. B. „Unter −12“ trifft bei −12,1), <b>Über</b> = Messwert > Wert, <b>Gleich</b> = im Bereich Wert ± Toleranz. Wert in der Basiseinheit rechts.'},
  tip_tol:{en:'The window around the value: match when |reading − value| ≤ tolerance (value−tol … value+tol). Only for “Equal”. <b>Tolerance 0 almost never fires.</b>',de:'Das Fenster um den Wert: Treffer, wenn |Messwert − Wert| ≤ Toleranz (Wert−Tol … Wert+Tol). Nur bei „Gleich“. <b>Toleranz 0 löst praktisch nie aus.</b>'},
@@ -349,6 +359,7 @@ var cdOn=false,cdMode=(localStorage.getItem('xdm_cdmode')||'above'),cdThr=parseF
 var cdFlag=localStorage.getItem('xdm_cdflag')!=='0',cdBeep=localStorage.getItem('xdm_cdbeep')!=='0',cdFreeze=localStorage.getItem('xdm_cdfreeze')==='1',cdRep=(localStorage.getItem('xdm_cdrep')||'cont'),condPrev=false;
 if(isNaN(cdThr))cdThr=0;if(isNaN(cdTol)||cdTol<0)cdTol=0;
 var yMode=(localStorage.getItem('xdm_ymode')||'range');if(yMode=='manual')yMode='range';var manMin=null,manMax=null;
+var gaugeOn=localStorage.getItem('xdm_gauge')!=='0';
 var showSps=localStorage.getItem('xdm_show_sps')!=='0',showMem=localStorage.getItem('xdm_show_mem')==='1';
 function applyTopbar(){el('sps').style.display=showSps?'':'none';el('mem').style.display=showMem?'':'none';}
 var stats={min:null,max:null,sum:0,cnt:0},hist=[];
@@ -434,7 +445,36 @@ function drawChart(){var c=el('spark');var w=c.width=c.clientWidth,h=c.height=c.
  hist.forEach(function(p,i){var px=PL+(p.t-t0)/span*pw,py=PT+ph-(p.v-mn)/(mx-mn)*ph;
   if(py<PT)py=PT;if(py>PT+ph)py=PT+ph;
   i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();}
-function setReading(j){lastVal=j.value;var f=fmt(j.value,cur.g);var ve=el('val');
+function gnum(v){if(Math.abs(v)<1e-9)return'0';return(+v.toFixed(2)).toString();}
+function drawGauge(v){if(!gaugeOn)return;var c=el('gauge');if(!c)return;
+ var w=c.width=c.clientWidth,h=c.height=c.clientHeight;if(!w||!h)return;var x=c.getContext('2d');x.clearRect(0,0,w,h);
+ var cs=getComputedStyle(document.documentElement),g=function(n,d){return(cs.getPropertyValue(n)||d).trim();};
+ var CL=g('--line','#243049'),CM=g('--mut','#64748b'),CT=g('--txt','#e2e8f0'),CA=g('--acc','#38bdf8'),CB=g('--bad','#ef4444');
+ var SW=75*Math.PI/180,aL=-Math.PI/2-SW,aR=-Math.PI/2+SW;
+ var bnd=computeBounds(),mn=bnd.mn,mx=bnd.mx;
+ var au=(yMode=='range'&&bnd.fs&&bnd.rb)?bnd.rb:unitFor(Math.max(Math.abs(mn),Math.abs(mx)),cur.g);
+ if(!(mx>mn)){mn=-1;mx=1;}
+ var pad=Math.max(6,h*0.05),R=Math.min(w*0.47,(h-2*pad)/1.16),cx=w/2,cy=h-pad-0.14*R;
+ function pt(a,r){return[cx+Math.cos(a)*r,cy+Math.sin(a)*r];}
+ function ang(val){var f=(Math.max(mn,Math.min(mx,val))-mn)/(mx-mn);if(!isFinite(f))f=.5;return aL+f*(aR-aL);}
+ // scale arc
+ x.lineWidth=Math.max(2,R*0.028);x.strokeStyle=CL;x.lineCap='butt';x.beginPath();x.arc(cx,cy,R,aL,aR);x.stroke();
+ // ticks + labels
+ var N=4;x.textAlign='center';x.textBaseline='middle';x.font='600 '+Math.round(R*0.115)+'px system-ui';
+ for(var i=0;i<=N;i++){var f=i/N,a=aL+f*(aR-aL),val=mn+f*(mx-mn);
+  var p1=pt(a,R),p2=pt(a,R-R*0.13);x.strokeStyle=CM;x.lineWidth=Math.max(1.5,R*0.016);x.beginPath();x.moveTo(p1[0],p1[1]);x.lineTo(p2[0],p2[1]);x.stroke();
+  var lp=pt(a,R-R*0.26);x.fillStyle=CM;x.fillText(gnum(val*au.f),lp[0],lp[1]);
+  if(i<N)for(var m=1;m<5;m++){var a2=aL+((i+m/5)/N)*(aR-aL),q1=pt(a2,R),q2=pt(a2,R-R*0.07);x.strokeStyle=CL;x.lineWidth=1;x.beginPath();x.moveTo(q1[0],q1[1]);x.lineTo(q2[0],q2[1]);x.stroke();}}
+ // unit
+ x.fillStyle=CM;x.font='600 '+Math.round(R*0.12)+'px system-ui';x.fillText(au.u,cx,cy-R*0.42);
+ // needle
+ var ol=(v!==null&&Math.abs(v)>=1e9),a=ol?aR:ang(v===null?mn:v),col=ol?CB:CA;
+ var nt=pt(a,R*0.92),tail=pt(a,-R*0.13);
+ x.strokeStyle=col;x.lineCap='round';x.lineWidth=Math.max(2,R*0.024);x.beginPath();x.moveTo(tail[0],tail[1]);x.lineTo(nt[0],nt[1]);x.stroke();
+ x.fillStyle=CT;x.beginPath();x.arc(cx,cy,R*0.05,0,6.2832);x.fill();
+ x.fillStyle=col;x.beginPath();x.arc(cx,cy,R*0.03,0,6.2832);x.fill();}
+function applyGauge(){document.body.classList.toggle('gauge-off',!gaugeOn);if(gaugeOn)drawGauge(lastVal);}
+function setReading(j){lastVal=j.value;drawGauge(j.value);var f=fmt(j.value,cur.g);var ve=el('val');
  ve.textContent=f.n;el('unit').innerHTML=f.u+acdcStr();
  ve.className='val'+(hold?' hold':'')+(f.n=='OL'?' ol':'');
  var ce=el('cont');
@@ -452,7 +492,7 @@ function setReading(j){lastVal=j.value;var f=fmt(j.value,cur.g);var ve=el('val')
 var lastEspGood=0,lastMeterGood=0;
 function updateDiscon(){var now=performance.now(),d=el('discon');if(!d)return;
  if(now-lastEspGood>2500){d.textContent=t('disc_esp');d.className='discon show';}
- else if((trig=='auto'||cdOn)&&!hold&&now-lastMeterGood>3000){d.textContent=t('disc_meter');d.className='discon show meter';}
+ else if((trig=='auto'||cdOn)&&!hold&&now-lastMeterGood>3000&&now-lastLocalFn>4000){d.textContent=t('disc_meter');d.className='discon show meter';}
  else d.className='discon';}
 async function reading(){try{var r=await fetch('/api/reading',{cache:'no-store'});var j=await r.json();
  el('conn').className='conn on';lastEspGood=performance.now();if(j.ok)lastMeterGood=lastEspGood;if(!hold)setReading(j);
@@ -619,6 +659,11 @@ document.addEventListener('click',function(e){
  if(TIP&&TIP.classList.contains('show')&&!TIP.contains(e.target))hideTip();
 },true);
 addEventListener('resize',hideTip);
+// ---- Analog needle gauge ----
+el('sw_gauge').checked=gaugeOn;
+el('sw_gauge').onchange=function(){gaugeOn=el('sw_gauge').checked;try{localStorage.setItem('xdm_gauge',gaugeOn?'1':'0');}catch(e){}applyGauge();};
+applyGauge();
+addEventListener('resize',function(){if(gaugeOn)drawGauge(lastVal);});
 function applyBeepUi(){if(el('sw_beep'))el('sw_beep').checked=beepOn;if(el('sw_beepsync'))el('sw_beepsync').checked=beepSync;if(el('cb_sync'))el('cb_sync').checked=beepSync;var b=el('beepbtn');if(b){b.classList.toggle('on',beepOn);b.textContent=(beepOn?t('beepon'):t('beepoff'));}}
 function setBeepLocal(v){beepOn=v;try{localStorage.setItem('xdm_beep',v?'1':'0');}catch(e){}if(beepOn){beepInit();if(actx&&actx.state=='suspended')actx.resume();}else beep(false);applyBeepUi();}
 function setBeep(v){setBeepLocal(v);pushBuzzer();}
