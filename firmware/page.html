@@ -1,6 +1,15 @@
 <!DOCTYPE html><html lang="en"><head><meta charset="utf-8">
-<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,viewport-fit=cover">
 <title>OWON XDM1041 Bench</title>
+<link rel="manifest" href="/manifest.json">
+<meta name="theme-color" content="#0e1626">
+<link rel="icon" href="/icon-192.png">
+<link rel="apple-touch-icon" href="/apple-touch-icon.png">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="OWON XDM">
+<script>if('serviceWorker'in navigator){addEventListener('load',function(){navigator.serviceWorker.register('/sw.js').catch(function(){});});}</script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
 :root{--bg:#0a0f1a;--panel:#121a2b;--panel2:#0e1626;--line:#243049;--mut:#64748b;--txt:#e2e8f0;--acc:#38bdf8;--accb:#2563eb;--ok:#22c55e;--warn:#f59e0b;--bad:#ef4444}
@@ -20,6 +29,28 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .main{flex:1 1 auto;display:grid;grid-template-columns:1fr 300px;min-height:0}
 .stage{display:flex;flex-direction:column;padding:18px 22px;min-width:0}
 .submodes{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap}
+.cont{display:none;flex-direction:column;align-items:center;gap:7px;margin:2px 0 14px}
+.cont.show{display:flex}
+.cont.diod svg{display:none}
+.cont svg{width:260px;max-width:72%;height:56px}
+.cont .wire{fill:var(--mut);transition:fill .35s}
+.cont.okc .wire{fill:var(--ok)}
+.cont .l,.cont .r{transition:transform .4s cubic-bezier(.34,1.45,.5,1)}
+.cont.brk .l{transform:translateX(-12px)}.cont.brk .r{transform:translateX(12px)}
+.cont.okc .l{transform:translateX(8px)}.cont.okc .r{transform:translateX(-8px)}
+.cont .glow,.cont .spark{opacity:0;transition:opacity .25s}
+.cont.okc .glow{opacity:.3;animation:cpulse 1.1s ease-in-out infinite}
+.cont.okc .spark{opacity:1;animation:cpulse 1.1s ease-in-out infinite}
+@keyframes cpulse{0%,100%{opacity:.45}50%{opacity:1}}
+.contlbl{font-size:12px;font-weight:700;letter-spacing:.12em}
+.beeptgl{padding:5px 16px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--mut);font-size:12px;font-weight:700;letter-spacing:.06em;cursor:pointer}
+.beeptgl.on{background:var(--ok);border-color:var(--ok);color:#fff}
+.contctl{display:flex;align-items:center;gap:14px;flex-wrap:wrap;justify-content:center}
+.cthr{font-size:12px;font-weight:700;letter-spacing:.06em;color:var(--mut)}
+.csync{display:inline-flex;align-items:center;gap:5px;font-size:12px;font-weight:700;letter-spacing:.05em;color:var(--mut);cursor:pointer}
+.csync input{cursor:pointer;margin:0}
+.cthr input{width:62px;margin:0 4px;padding:4px 6px;border:1px solid var(--line);border-radius:7px;background:var(--panel);color:var(--txt);font-size:13px;font-weight:700;text-align:right}
+.cont.okc .contlbl{color:var(--ok)}.cont.brk .contlbl{color:var(--mut)}
 .sub{padding:7px 16px;border:1px solid var(--line);border-radius:999px;background:var(--panel);color:var(--mut);font-size:13px;font-weight:600;cursor:pointer}
 .sub.active{background:var(--accb);border-color:var(--accb);color:#fff}
 .readout{flex:1 1 auto;display:flex;flex-direction:column;align-items:center;justify-content:center;background:var(--panel);border:1px solid var(--line);border-radius:16px;min-height:0;position:relative}
@@ -27,6 +58,7 @@ header{display:flex;align-items:center;justify-content:space-between;padding:10p
 .val{font-size:clamp(48px,11vw,140px);font-weight:800;font-variant-numeric:tabular-nums;color:var(--acc);line-height:1}
 .val.hold{color:var(--warn)}.val.ol{color:var(--bad)}
 .unit{font-size:clamp(20px,3vw,42px);color:var(--mut);margin-left:10px}
+.acdc{font-style:normal;font-size:.6em;vertical-align:.12em;margin-left:2px;opacity:.8}
 .modeline{margin-top:10px;color:var(--mut);font-size:14px;letter-spacing:1px}
 .sparkwrap{width:96%;height:150px;margin-top:14px;resize:vertical;overflow:hidden;min-height:90px;max-height:75vh;position:relative}
 .sparkwrap::after{content:"⤡";position:absolute;right:3px;bottom:1px;font-size:12px;color:var(--mut);opacity:.55;pointer-events:none}
@@ -83,6 +115,11 @@ button:disabled{opacity:.4;cursor:not-allowed}
 .netgrid label{display:flex;flex-direction:column;font-size:12px;color:var(--mut);gap:5px}
 .netgrid input,.netgrid select{padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);font-size:13px}
 .hint{font-size:12px;color:var(--mut);margin:10px 0 0;line-height:1.5}
+.langsel{padding:8px 10px;background:var(--bg);border:1px solid var(--line);border-radius:8px;color:var(--txt);font-size:13px;min-width:160px}
+.discon{display:none}
+.discon.show{display:block;background:var(--bad);color:#fff;text-align:center;font-weight:700;font-size:13px;letter-spacing:.03em;padding:9px 14px;animation:dpulse 1.4s ease-in-out infinite}
+.discon.show.meter{background:var(--warn);color:#1a1205}
+@keyframes dpulse{0%,100%{opacity:1}50%{opacity:.7}}
 @media (max-width:760px){
  .main{grid-template-columns:1fr;grid-template-rows:1fr auto}
  .panel{border-left:none;border-top:1px solid var(--line);flex-direction:row;flex-wrap:wrap;gap:12px;max-height:42vh}
@@ -96,6 +133,7 @@ button:disabled{opacity:.4;cursor:not-allowed}
  <div class="brand">OWON XDM1041 <span id="idn">connecting…</span></div>
  <div class="hlinks"><span id="sps" class="sps">– S/s</span><span id="mem" class="sps" style="display:none"></span><a href="#" id="gear" title="Settings">&#9881;</a><a href="/console">Console</a><a href="/ota">OTA</a><span id="conn" class="conn"></span></div>
 </header>
+<div class="discon" id="discon"></div>
 <nav class="tabs" id="tabs"></nav>
 <div class="main">
  <section class="stage">
@@ -103,88 +141,162 @@ button:disabled{opacity:.4;cursor:not-allowed}
   <div class="readout">
    <div class="reading"><span id="val" class="val">--</span><span id="unit" class="unit"></span></div>
    <div class="modeline" id="modeline"></div>
+   <div class="cont" id="cont"><svg viewBox="0 0 280 56" aria-hidden="true">
+    <g class="glow"><circle cx="140" cy="29" r="22" fill="var(--ok)"/></g>
+    <g class="l"><rect class="wire" x="4" y="23" width="104" height="12" rx="6"/><rect x="104" y="17" width="22" height="24" rx="4" fill="#aab2c0"/><rect x="124" y="25" width="11" height="8" rx="3" fill="#e3e9f2"/></g>
+    <g class="r"><rect x="147" y="25" width="11" height="8" rx="3" fill="#e3e9f2"/><rect x="156" y="17" width="22" height="24" rx="4" fill="#aab2c0"/><rect class="wire" x="174" y="23" width="104" height="12" rx="6"/></g>
+    <g class="spark"><circle cx="140" cy="29" r="7" fill="#fff"/><circle cx="140" cy="29" r="11" fill="none" stroke="var(--ok)" stroke-width="2"/></g>
+   </svg><div class="contlbl" id="contlbl">—</div>
+   <div class="contctl"><button class="beeptgl" id="beepbtn" type="button">Beep off</button>
+    <label class="csync"><input type="checkbox" id="cb_sync"><span data-i18n="link_hw">Link with Hardware</span></label>
+    <span class="cthr"><span data-i18n="thr">Threshold</span> <input id="cthr" type="number" min="1" max="1000" step="1" value="50"> <span id="cthru">&#937;</span></span></div></div>
    <div class="sparkwrap" id="sparkwrap"><canvas id="spark" class="spark"></canvas></div>
    <div class="yctl">
-    <span>Y&#8209;axis</span>
-    <div class="seg" id="ymode"><button data-y="range">Range</button><button data-y="auto">Auto&#8209;fit</button><button data-y="manual">Manual</button></div>
+    <span data-i18n="yaxis">Y&#8209;axis</span>
+    <div class="seg" id="ymode"><button data-y="range" data-i18n="y_range">Range</button><button data-y="auto" data-i18n="y_autofit">Auto&#8209;fit</button><button data-y="manual" data-i18n="y_manual">Manual</button></div>
     <button class="yzoom" id="yin" title="Zoom in (mouse wheel up)">+</button>
     <button class="yzoom" id="yout" title="Zoom out (mouse wheel down)">&#8722;</button>
-    <span class="yhint">wheel over graph to zoom</span>
+    <span class="yhint" data-i18n="yhint">wheel over graph to zoom</span>
    </div>
    <div class="stats">
     <span>MIN <b id="min">–</b></span><span>MAX <b id="max">–</b></span><span>AVG <b id="avg">–</b></span>
-    <button id="rstStat">Reset</button>
+    <button id="rstStat" data-i18n="reset">Reset</button>
    </div>
   </div>
  </section>
  <aside class="panel">
-  <div class="grp"><h3>Sampling</h3><div class="seg" id="rate">
+  <div class="grp"><h3 data-i18n="sampling">Sampling</h3><div class="seg" id="rate">
    <button data-r="S">Low</button><button data-r="M">Mid</button><button data-r="F">High</button></div></div>
-  <div class="grp"><h3>Range</h3>
+  <div class="grp"><h3 data-i18n="range">Range</h3>
    <div class="rangebox"><button id="rdown">&#9660;</button><span id="rangelbl">–</span><button id="rup">&#9650;</button></div>
-   <button id="rauto" class="wide">Auto</button></div>
-  <div class="grp"><h3>Trigger</h3><div class="seg" id="trig">
-   <button data-t="auto" class="active">Auto</button><button data-t="single">Single</button></div>
-   <button id="trigbtn" class="wide" disabled style="margin-top:8px">Trigger &#9658;</button></div>
-  <div class="grp"><h3>Display</h3><button id="hold" class="wide hold">Hold</button></div>
+   <button id="rauto" class="wide" data-i18n="autob">Auto</button></div>
+  <div class="grp"><h3 data-i18n="trigger">Trigger</h3><div class="seg" id="trig">
+   <button data-t="auto" class="active" data-i18n="t_auto">Auto</button><button data-t="single" data-i18n="t_single">Single</button></div>
+   <button id="trigbtn" class="wide" disabled style="margin-top:8px" data-i18n="trigbtn">Trigger &#9658;</button></div>
+  <div class="grp"><h3 data-i18n="display">Display</h3><button id="hold" class="wide hold" data-i18n="hold">Hold</button></div>
  </aside>
 </div>
 <div class="ovl" id="ovl"><div class="dlg">
- <div class="dlgtitle"><b>Settings</b><span class="dlgx" id="ovlx">&#10005;</span></div>
- <div class="stabs"><button class="stab active" data-s="design">Design</button><button class="stab" data-s="display">Display</button><button class="stab" data-s="network">Network</button><button class="stab" data-s="system">System</button></div>
+ <div class="dlgtitle"><b data-i18n="settings">Settings</b><span class="dlgx" id="ovlx">&#10005;</span></div>
+ <div class="stabs"><button class="stab active" data-s="design" data-i18n="s_design">Design</button><button class="stab" data-s="display" data-i18n="s_display">Display</button><button class="stab" data-s="network" data-i18n="s_network">Network</button><button class="stab" data-s="system" data-i18n="s_system">System</button></div>
  <div class="spane active" data-p="design">
   <div class="themerow" id="themerow"></div>
   <div class="colors" id="colors"></div>
   <div class="actions">
-   <button class="primary" id="saveTheme">Save</button>
-   <button id="resetTheme">Reset</button>
-   <button id="expBtn">Export</button>
-   <button id="impBtn">Import</button>
+   <button class="primary" id="saveTheme" data-i18n="save">Save</button>
+   <button id="resetTheme" data-i18n="reset">Reset</button>
+   <button id="expBtn" data-i18n="exportb">Export</button>
+   <button id="impBtn" data-i18n="importb">Import</button>
   </div>
   <textarea class="io" id="io" placeholder="Paste JSON here, then Apply"></textarea>
-  <div class="actions" id="impActions" style="display:none"><button class="primary" id="impApply">Apply</button></div>
-  <div class="grp" style="margin-top:16px"><h3>Top bar</h3>
-   <label class="swrow"><input type="checkbox" id="sw_sps"><span>Show sampling rate (S/s)</span></label>
-   <label class="swrow"><input type="checkbox" id="sw_mem"><span>Show memory usage (RAM)</span></label>
+  <div class="actions" id="impActions" style="display:none"><button class="primary" id="impApply" data-i18n="apply">Apply</button></div>
+  <div class="grp" style="margin-top:16px"><h3 data-i18n="topbar">Top bar</h3>
+   <label class="swrow"><input type="checkbox" id="sw_sps"><span data-i18n="show_sps">Show sampling rate (S/s)</span></label>
+   <label class="swrow"><input type="checkbox" id="sw_mem"><span data-i18n="show_mem">Show memory usage (RAM)</span></label>
+  </div>
+  <div class="grp" style="margin-top:16px"><h3 data-i18n="acdc">AC/DC indicator</h3><div class="seg" id="acdcmode">
+   <button data-a="sym">Symbol &#9155;&#8767;</button><button data-a="tilde">Tilde = ~</button><button data-a="text">Text DC/AC</button><button data-a="off" data-i18n="a_off">Off</button></div>
+   <p class="hint" data-i18nh="hint_acdc">Mark V and A readings as DC or AC next to the unit. &bdquo;Symbol&ldquo; uses the IEC marks (&#9155; / &#8767;) &ndash; switch to Tilde or Text if they don&rsquo;t render on your device.</p>
   </div>
  </div>
  <div class="spane" data-p="network">
   <div class="netgrid">
-   <label>Hostname<input id="n_host" placeholder="owon"></label>
-   <label>Mode<select id="n_dhcp"><option value="1">DHCP (automatic)</option><option value="0">Static IP</option></select></label>
-   <label>IP address<input id="n_ip" placeholder="192.168.0.50"></label>
-   <label>Subnet mask<input id="n_mask" placeholder="255.255.255.0"></label>
+   <label><span data-i18n="mode">Mode</span><select id="n_dhcp"><option value="1" data-i18n="dhcp">DHCP (automatic)</option><option value="0" data-i18n="staticip">Static IP</option></select></label>
+   <label><span data-i18n="ipaddr">IP address</span><input id="n_ip" placeholder="192.168.0.50"></label>
+   <label><span data-i18n="submask">Subnet mask</span><input id="n_mask" placeholder="255.255.255.0"></label>
    <label>Gateway<input id="n_gw" placeholder="192.168.0.1"></label>
    <label>DNS<input id="n_dns" placeholder="192.168.0.1"></label>
   </div>
-  <div class="actions"><button id="netSave">Save only</button><button class="primary" id="netReboot">Save &amp; Reboot (apply)</button></div>
+  <div class="actions"><button id="netSave" data-i18n="saveonly">Save only</button><button class="primary" id="netReboot" data-i18n="savereboot">Save &amp; Reboot (apply)</button></div>
   <p class="hint" id="netmsg"></p>
-  <p class="hint">The hostname shows up in your router; <b>owon.local</b> works depending on router/client. A static IP is guaranteed &ndash; pick a free address outside the DHCP range. Changes take effect after reboot.</p>
+  <p class="hint" data-i18nh="hint_net">The device is always reachable at <b>owon.local</b> (fixed). A static IP is guaranteed &ndash; pick a free address outside the DHCP range. Changes take effect after reboot.</p>
  </div>
  <div class="spane" data-p="display">
-  <div class="grp"><h3>Unit</h3><div class="seg" id="umode">
-   <button data-u="range">Match meter</button><button data-u="auto">Auto-scale</button></div></div>
-  <p class="hint">&bdquo;Match meter&ldquo;: the unit follows the measurement range (e.g. 5&nbsp;V range &rarr; shown in V) &ndash; just like the multimeter display.<br>&bdquo;Auto-scale&ldquo;: nicest unit for the value (mV/V/kV &hellip;).</p>
+  <div class="grp"><h3 data-i18n="unit">Unit</h3><div class="seg" id="umode">
+   <button data-u="range" data-i18n="u_match">Match meter</button><button data-u="auto" data-i18n="u_auto">Auto-scale</button></div></div>
+  <p class="hint" data-i18nh="hint_unit">&bdquo;Match meter&ldquo;: the unit follows the measurement range (e.g. 5&nbsp;V range &rarr; shown in V) &ndash; just like the multimeter display.<br>&bdquo;Auto-scale&ldquo;: nicest unit for the value (mV/V/kV &hellip;).</p>
+  <div class="grp" style="margin-top:16px"><h3 data-i18n="sound">Sound</h3>
+   <label class="swrow"><input type="checkbox" id="sw_beep"><span data-i18n="beep_cont">Continuity beep (browser tone on continuity)</span></label>
+   <label class="swrow"><input type="checkbox" id="sw_beepsync"><span data-i18n="beep_hw">Also drive the device buzzer (SYST:BEEP &ndash; the meter beeps too)</span></label>
+   <p class="hint" data-i18nh="hint_sound">Plays a tone while continuity is detected (below the threshold set on the Continuity page), like the multimeter buzzer. Browser audio plays from this device; with the second option the OWON&rsquo;s own buzzer is switched along with the toggle.</p>
+  </div>
  </div>
  <div class="spane" data-p="system"><div id="sysinfo" class="sysinfo">…</div>
-  <div class="grp" style="margin-top:18px"><h3>Maintenance</h3>
-   <button id="factoryBtn" class="wide" style="background:var(--bad);border-color:var(--bad);color:#fff">Factory reset</button></div>
-  <p class="hint">Erases WiFi &amp; network settings and reboots into the setup access point.</p>
+  <div class="grp" style="margin-top:18px"><h3 data-i18n="language">Language</h3>
+   <select id="langsel" class="langsel"><option value="en">English</option><option value="de">Deutsch</option></select></div>
+  <div class="grp" style="margin-top:18px"><h3 data-i18n="behavior">Behavior</h3>
+   <label class="swrow"><input type="checkbox" id="sw_follow"><span data-i18n="follow">Follow function changes made on the device</span></label>
+   <p class="hint" data-i18nh="hint_follow">When on, the firmware reads the meter&rsquo;s function (FUNC?) about every 2&nbsp;s, so turning the rotary on the device makes the web UI follow. Costs one query per cycle &rarr; slightly fewer samples/s. (Temperature can&rsquo;t be detected this way &ndash; the device doesn&rsquo;t report it.)</p>
+  </div>
+  <div class="grp" style="margin-top:18px"><h3 data-i18n="maint">Maintenance</h3>
+   <button id="factoryBtn" class="wide" style="background:var(--bad);border-color:var(--bad);color:#fff" data-i18n="factory">Factory reset</button></div>
+  <p class="hint" data-i18nh="hint_maint">Erases WiFi &amp; network settings and reboots into the setup access point.</p>
  </div>
 </div></div>
 <div class="wait" id="waitovl"><div><div class="sp"></div><h2 id="waitt">Rebooting...</h2><p id="waitm"></p><a id="waitlink" href="#">open</a></div></div>
 <div class="ovl" id="crashovl"><div class="dlg">
- <div class="dlgtitle"><b>&#9888; OWON ESP did not shut down properly</b></div>
+ <div class="dlgtitle"><b data-i18n="crashtitle">&#9888; OWON ESP did not shut down properly</b></div>
  <div class="spane active">
-  <p class="hint">The previous session ended unexpectedly (crash, hang or power loss). Last log:</p>
+  <p class="hint" data-i18nh="hint_crash">The previous session ended unexpectedly (crash, hang or power loss). Last log:</p>
   <pre id="crashlog" style="background:var(--bg);border:1px solid var(--line);border-radius:10px;padding:12px;max-height:50vh;overflow:auto;font-size:12px;line-height:1.4;white-space:pre-wrap;word-break:break-word;color:var(--mut)"></pre>
-  <div class="actions"><button class="primary" id="crashDismiss">Dismiss</button></div>
+  <div class="actions"><button class="primary" id="crashDismiss" data-i18n="dismiss">Dismiss</button></div>
  </div>
 </div></div>
 <script>
 var CFG=__CFG__;
+var LANG=(localStorage.getItem('xdm_lang')||'en');
+var I18N={
+ sampling:{en:'Sampling',de:'Abtastrate'},range:{en:'Range',de:'Bereich'},trigger:{en:'Trigger',de:'Trigger'},
+ t_single:{en:'Single',de:'Einzeln'},t_auto:{en:'Auto',de:'Auto'},trigbtn:{en:'Trigger ▸',de:'Auslösen ▸'},
+ display:{en:'Display',de:'Anzeige'},hold:{en:'Hold',de:'Halten'},autob:{en:'Auto',de:'Auto'},
+ yaxis:{en:'Y‑axis',de:'Y‑Achse'},y_range:{en:'Range',de:'Bereich'},y_autofit:{en:'Auto‑fit',de:'Auto‑Fit'},y_manual:{en:'Manual',de:'Manuell'},
+ yhint:{en:'wheel over graph to zoom',de:'Mausrad über Graph zum Zoomen'},reset:{en:'Reset',de:'Zurücksetzen'},
+ thr:{en:'Threshold',de:'Schwelle'},link_hw:{en:'Link with Hardware',de:'Mit Hardware koppeln'},
+ settings:{en:'Settings',de:'Einstellungen'},s_design:{en:'Design',de:'Design'},s_display:{en:'Display',de:'Anzeige'},s_network:{en:'Network',de:'Netzwerk'},s_system:{en:'System',de:'System'},
+ save:{en:'Save',de:'Speichern'},exportb:{en:'Export',de:'Export'},importb:{en:'Import',de:'Import'},apply:{en:'Apply',de:'Anwenden'},
+ topbar:{en:'Top bar',de:'Obere Leiste'},show_sps:{en:'Show sampling rate (S/s)',de:'Abtastrate anzeigen (S/s)'},show_mem:{en:'Show memory usage (RAM)',de:'Speicher anzeigen (RAM)'},
+ acdc:{en:'AC/DC indicator',de:'AC/DC‑Anzeige'},a_off:{en:'Off',de:'Aus'},
+ unit:{en:'Unit',de:'Einheit'},u_match:{en:'Match meter',de:'Wie Messgerät'},u_auto:{en:'Auto‑scale',de:'Auto‑Skalierung'},
+ sound:{en:'Sound',de:'Ton'},beep_cont:{en:'Continuity beep (browser tone on continuity)',de:'Durchgangston (Browser‑Ton bei Durchgang)'},
+ beep_hw:{en:'Also drive the device buzzer (SYST:BEEP – the meter beeps too)',de:'Auch den Geräte‑Summer schalten (SYST:BEEP – das Messgerät piept mit)'},
+ behavior:{en:'Behavior',de:'Verhalten'},follow:{en:'Follow function changes made on the device',de:'Funktionswechsel am Gerät übernehmen'},
+ maint:{en:'Maintenance',de:'Wartung'},factory:{en:'Factory reset',de:'Werksreset'},language:{en:'Language',de:'Sprache'},
+ hostname:{en:'Hostname',de:'Hostname'},mode:{en:'Mode',de:'Modus'},dhcp:{en:'DHCP (automatic)',de:'DHCP (automatisch)'},staticip:{en:'Static IP',de:'Statische IP'},
+ ipaddr:{en:'IP address',de:'IP‑Adresse'},submask:{en:'Subnet mask',de:'Subnetzmaske'},saveonly:{en:'Save only',de:'Nur speichern'},savereboot:{en:'Save & Reboot (apply)',de:'Speichern & Neustart (anwenden)'},
+ dismiss:{en:'Dismiss',de:'Schließen'},crashtitle:{en:'⚠ OWON ESP did not shut down properly',de:'⚠ OWON ESP wurde nicht sauber heruntergefahren'},
+ // dynamic
+ beepon:{en:'Beep on',de:'Ton an'},beepoff:{en:'Beep off',de:'Ton aus'},
+ st_cont:{en:'CONTINUITY',de:'DURCHGANG'},st_open:{en:'OPEN',de:'OFFEN'},st_short:{en:'SHORT',de:'KURZSCHLUSS'},st_diode:{en:'DIODE',de:'DIODE'},
+ live:{en:'live',de:'live'},stale:{en:'stale',de:'alt'},unreach:{en:'ESP unreachable',de:'ESP nicht erreichbar'},connecting:{en:'connecting…',de:'verbinde…'},
+ rebooting:{en:'Rebooting...',de:'Neustart...'},l_device:{en:'Device',de:'Gerät'},l_firmware:{en:'Firmware',de:'Firmware'},l_function:{en:'Function',de:'Funktion'},l_rate:{en:'Rate',de:'Rate'},l_range:{en:'Range',de:'Bereich'},l_host:{en:'Host',de:'Host'},
+ invjson:{en:'Invalid JSON',de:'Ungültiges JSON'},
+ disc_esp:{en:'⚠ Connection lost – ESP unreachable. Reconnecting…',de:'⚠ Verbindung verloren – ESP nicht erreichbar. Verbinde erneut…'},
+ disc_meter:{en:'⚠ Meter not responding – check the OWON connection',de:'⚠ Messgerät antwortet nicht – OWON‑Verbindung prüfen'},
+ fac_confirm:{en:'Factory reset: erase WiFi & network settings and reboot into the setup access point?',de:'Werksreset: WLAN‑ & Netzwerkeinstellungen löschen und in den Einrichtungs‑AP neu starten?'},
+ fac_title:{en:'Factory reset - rebooting into setup AP',de:'Werksreset – Neustart in Einrichtungs‑AP'},
+ fac_msg:{en:'Connect your device to WiFi "OWON-XDM-Remote-Setup", then open http://192.168.4.1',de:'Verbinde dein Gerät mit dem WLAN „OWON-XDM-Remote-Setup“, dann öffne http://192.168.4.1'},
+ net_curip:{en:'Current IP: ',de:'Aktuelle IP: '},net_unread:{en:'Network config not readable',de:'Netzwerkkonfig nicht lesbar'},
+ net_saved:{en:'Saved. Active after reboot.',de:'Gespeichert. Aktiv nach Neustart.'},net_err:{en:'Error: ',de:'Fehler: '},net_applyt:{en:'Apply & reboot...',de:'Anwenden & Neustart...'},
+ // submodes
+ Resistance:{en:'Resistance',de:'Widerstand'},Continuity:{en:'Continuity',de:'Durchgang'},Capacitance:{en:'Capacitance',de:'Kapazität'},Frequency:{en:'Frequency',de:'Frequenz'},Temperature:{en:'Temperature',de:'Temperatur'},Diode:{en:'Diode',de:'Diode'}
+};
+var I18NH={
+ hint_acdc:{en:'Mark V and A readings as DC or AC next to the unit. „Symbol“ uses the IEC marks (⏣ / ∿) – switch to Tilde or Text if they don’t render on your device.',de:'Markiert V‑ und A‑Messwerte als DC oder AC neben der Einheit. „Symbol“ nutzt die IEC‑Zeichen (⏣ / ∿) – auf Tilde oder Text wechseln, falls sie nicht angezeigt werden.'},
+ hint_unit:{en:'„Match meter“: the unit follows the measurement range (e.g. 5 V range → shown in V) – just like the multimeter display.<br>„Auto-scale“: nicest unit for the value (mV/V/kV …).',de:'„Wie Messgerät“: die Einheit folgt dem Messbereich (z. B. 5 V‑Bereich → in V) – wie die Anzeige des Multimeters.<br>„Auto‑Skalierung“: schönste Einheit für den Wert (mV/V/kV …).'},
+ hint_sound:{en:'Plays a tone while continuity is detected (below the threshold set on the Continuity page), like the multimeter buzzer. Browser audio plays from this device; with the second option the OWON’s own buzzer is switched along with the toggle.',de:'Spielt einen Ton bei Durchgang (unter der auf der Durchgangs‑Seite gesetzten Schwelle), wie der Multimeter‑Summer. Der Browser‑Ton kommt von diesem Gerät; mit der zweiten Option wird der OWON‑Summer mitgeschaltet.'},
+ hint_follow:{en:'When on, the firmware reads the meter’s function (FUNC?) about every 2 s, so turning the rotary on the device makes the web UI follow. Costs one query per cycle → slightly fewer samples/s. (Temperature can’t be detected this way – the device doesn’t report it.)',de:'Wenn aktiv, liest die Firmware die Gerätefunktion (FUNC?) etwa alle 2 s, sodass die Web‑UI dem Drehschalter folgt. Kostet eine Abfrage pro Zyklus → etwas weniger Messungen/s. (Temperatur ist so nicht erkennbar – das Gerät meldet sie nicht.)'},
+ hint_maint:{en:'Erases WiFi & network settings and reboots into the setup access point.',de:'Löscht WLAN‑ & Netzwerkeinstellungen und startet in den Einrichtungs‑Accesspoint.'},
+ hint_net:{en:'The device is always reachable at <b>owon.local</b> (fixed). A static IP is guaranteed – pick a free address outside the DHCP range. Changes take effect after reboot.',de:'Das Gerät ist immer unter <b>owon.local</b> erreichbar (fest). Eine statische IP ist garantiert – wähle eine freie Adresse außerhalb des DHCP‑Bereichs. Änderungen wirken nach Neustart.'},
+ hint_crash:{en:'The previous session ended unexpectedly (crash, hang or power loss). Last log:',de:'Die vorherige Sitzung endete unerwartet (Absturz, Hänger oder Stromausfall). Letztes Log:'}
+};
+function t(k){var e=I18N[k];return e?(e[LANG]||e.en):k;}
+function applyLang(l){LANG=l;try{localStorage.setItem('xdm_lang',l);}catch(e){}document.documentElement.lang=l;
+ var ns=document.querySelectorAll('[data-i18n]');for(var i=0;i<ns.length;i++){var k=ns[i].getAttribute('data-i18n');if(I18N[k])ns[i].textContent=I18N[k][l]||I18N[k].en;}
+ var hs=document.querySelectorAll('[data-i18nh]');for(i=0;i<hs.length;i++){var k2=hs[i].getAttribute('data-i18nh');if(I18NH[k2])hs[i].innerHTML=I18NH[k2][l]||I18NH[k2].en;}
+ if(typeof buildSubs=='function')buildSubs();if(typeof applyBeepUi=='function')applyBeepUi();
+ var lb=el('langsel');if(lb)lb.value=l;}
 function waitRedirect(url,title){
- el('waitt').textContent=title||'Rebooting...';
+ el('waitt').textContent=title||t('rebooting');
  el('waitm').textContent='Waiting for '+url+' to come up - then redirecting automatically.';
  var a=el('waitlink');a.href=url;a.textContent=url;
  el('waitovl').classList.add('show');
@@ -192,7 +304,7 @@ function waitRedirect(url,title){
   fetch(url+'api/status',{mode:'no-cors',cache:'no-store'}).then(function(){location.replace(url);}).catch(function(){setTimeout(poll,2000);});
  },6000);
 }
-var cur={k:'VDC',g:'V'},trig='auto',hold=false,curTab=0,curRange='',unitMode=(localStorage.getItem('xdm_unitmode')||'range');
+var cur={k:'VDC',g:'V'},trig='auto',hold=false,curTab=0,curRange='',lastLocalFn=0,unitMode=(localStorage.getItem('xdm_unitmode')||'range'),acdcMode=(localStorage.getItem('xdm_acdc')||'sym');
 var yMode=(localStorage.getItem('xdm_ymode')||'range');if(yMode=='manual')yMode='range';var manMin=null,manMax=null;
 var showSps=localStorage.getItem('xdm_show_sps')!=='0',showMem=localStorage.getItem('xdm_show_mem')==='1';
 function applyTopbar(){el('sps').style.display=showSps?'':'none';el('mem').style.display=showMem?'':'none';}
@@ -243,8 +355,11 @@ function buildTabs(){var t=el('tabs');t.innerHTML='';CFG.forEach(function(tb,i){
  b.onclick=function(){curTab=i;buildTabs();buildSubs();selSub(CFG[i].s[0]);};t.appendChild(b);});}
 function buildSubs(){var s=el('submodes');s.innerHTML='';var subs=CFG[curTab].s;
  subs.forEach(function(sm){var b=document.createElement('button');b.className='sub'+(sm.k==cur.k?' active':'');
-  b.textContent=sm.l;b.setAttribute('data-k',sm.k);b.onclick=function(){selSub(sm);};s.appendChild(b);});}
-function selSub(sm){cur=sm;manMin=null;manMax=null;buildSubs();resetStats();fetch('/api/function?set='+sm.k,{cache:'no-store'});}
+  b.textContent=(I18N[sm.l]?t(sm.l):sm.l);b.setAttribute('data-k',sm.k);b.onclick=function(){selSub(sm);};s.appendChild(b);});}
+function selSub(sm){cur=sm;lastLocalFn=performance.now();manMin=null;manMax=null;buildSubs();resetStats();fetch('/api/function?set='+sm.k,{cache:'no-store'});}
+function syncFn(k){if(!k||k==cur.k)return;if(performance.now()-lastLocalFn<2500)return;
+ for(var i=0;i<CFG.length;i++){var ss=CFG[i].s;for(var n=0;n<ss.length;n++){if(ss[n].k==k){
+  curTab=i;cur=ss[n];manMin=null;manMax=null;buildTabs();buildSubs();resetStats();return;}}}}
 function resetStats(){stats={min:null,max:null,sum:0,cnt:0};hist=[];el('min').textContent='–';el('max').textContent='–';el('avg').textContent='–';}
 function drawChart(){var c=el('spark');var w=c.width=c.clientWidth,h=c.height=c.clientHeight;var x=c.getContext('2d');
  var cs=getComputedStyle(document.documentElement),CL=(cs.getPropertyValue('--line')||'#243049').trim(),CM=(cs.getPropertyValue('--mut')||'#64748b').trim(),CA=(cs.getPropertyValue('--acc')||'#38bdf8').trim();
@@ -277,24 +392,37 @@ function drawChart(){var c=el('spark');var w=c.width=c.clientWidth,h=c.height=c.
   if(py<PT)py=PT;if(py>PT+ph)py=PT+ph;
   i?x.lineTo(px,py):x.moveTo(px,py);});x.stroke();}
 function setReading(j){var f=fmt(j.value,cur.g);var ve=el('val');
- ve.textContent=f.n;el('unit').textContent=f.u;ve.className='val'+(hold?' hold':'')+(f.n=='OL'?' ol':'');
+ ve.textContent=f.n;el('unit').innerHTML=f.u+acdcStr();
+ ve.className='val'+(hold?' hold':'')+(f.n=='OL'?' ol':'');
+ var ce=el('cont');
+ if(cur.k=='CONT'||cur.k=='DIOD'){if(contMode!=cur.k){contMode=cur.k;enterCont();}
+  var thr=cur.k=='DIOD'?diodThr:contThr,on=(j.value!==null&&Math.abs(j.value)<thr);
+  ce.classList.add('show');ce.classList.toggle('diod',cur.k=='DIOD');ce.classList.toggle('okc',on);ce.classList.toggle('brk',!on);
+  el('contlbl').textContent=cur.k=='DIOD'?(on?t('st_short'):t('st_diode')):(on?t('st_cont'):t('st_open'));beep(on);}
+ else {contMode='';ce.classList.remove('show','okc','brk');beep(false);}
  if(j.value!==null&&Math.abs(j.value)<1e9){
   if(stats.min===null||j.value<stats.min)stats.min=j.value;
   if(stats.max===null||j.value>stats.max)stats.max=j.value;
   stats.sum+=j.value;stats.cnt++;hist.push({t:performance.now(),v:j.value});if(hist.length>200)hist.shift();
   el('min').textContent=fmt(stats.min,cur.g).n;el('max').textContent=fmt(stats.max,cur.g).n;
   el('avg').textContent=fmt(stats.sum/stats.cnt,cur.g).n;drawChart();}}
+var lastEspGood=0,lastMeterGood=0;
+function updateDiscon(){var now=performance.now(),d=el('discon');if(!d)return;
+ if(now-lastEspGood>2500){d.textContent=t('disc_esp');d.className='discon show';}
+ else if(trig=='auto'&&!hold&&now-lastMeterGood>3000){d.textContent=t('disc_meter');d.className='discon show meter';}
+ else d.className='discon';}
 async function reading(){try{var r=await fetch('/api/reading',{cache:'no-store'});var j=await r.json();
- el('conn').className='conn on';if(!hold)setReading(j);
+ el('conn').className='conn on';lastEspGood=performance.now();if(j.ok)lastMeterGood=lastEspGood;if(!hold)setReading(j);
  if(j.sps!==undefined)el('sps').textContent=j.sps+' S/s';
- el('modeline').textContent=(j.ok?'live':'stale')+(j.raw?(' · '+j.raw):'');
- }catch(e){el('conn').className='conn bad';el('modeline').textContent='ESP unreachable';}}
+ el('modeline').textContent=(j.ok?t('live'):t('stale'))+(j.raw?(' · '+j.raw):'');updateDiscon();
+ }catch(e){el('conn').className='conn bad';el('modeline').textContent=t('unreach');updateDiscon();}}
 async function status(){try{var r=await fetch('/api/status',{cache:'no-store'});var j=await r.json();
- el('idn').textContent=j.idn||'';el('rangelbl').textContent=j.range||'–';curRange=j.range||'';
- if(j.memfree!==undefined){var tot=j.memfree+j.memalloc;el('mem').textContent='RAM '+Math.round(j.memalloc/tot*100)+'% · '+Math.round(j.memalloc/1024)+'/'+Math.round(tot/1024)+' KB';}
+ lastEspGood=performance.now();el('idn').textContent=j.idn||'';el('rangelbl').textContent=j.range||'–';curRange=j.range||'';
+ if(j.function)syncFn(j.function);
+ if(j.memfree!==undefined){var tot=j.memfree+j.memalloc,mx=j.memmax||tot;el('mem').textContent='RAM '+Math.round(j.memalloc/tot*100)+'% · '+Math.round(j.memalloc/1024)+'/'+Math.round(tot/1024)+' KB · max '+Math.round(mx/1024)+' KB';}
  var bs=el('rate').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-r')==j.rate);
- el('rauto').classList.toggle('active',j.auto==1);
- }catch(e){}}
+ el('rauto').classList.toggle('active',j.auto==1);updateDiscon();
+ }catch(e){updateDiscon();}}
 el('rate').onclick=function(e){var r=e.target.getAttribute('data-r');if(r)fetch('/api/rate?set='+r,{cache:'no-store'}).then(status);};
 el('rup').onclick=function(){fetch('/api/range?set=up',{cache:'no-store'}).then(status);};
 el('rdown').onclick=function(){fetch('/api/range?set=down',{cache:'no-store'}).then(status);};
@@ -303,7 +431,7 @@ el('trig').onclick=function(e){var t=e.target.getAttribute('data-t');if(!t)retur
  var bs=el('trig').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-t')==t);
  el('trigbtn').disabled=(t!='single');};
 el('trigbtn').onclick=function(){reading();};
-el('hold').onclick=function(){hold=!hold;el('hold').classList.toggle('active',hold);};
+el('hold').onclick=function(){hold=!hold;el('hold').classList.toggle('active',hold);if(hold)beep(false);else lastMeterGood=performance.now();};
 el('rstStat').onclick=resetStats;
 // ---- Themes / Settings ----
 var VARS=['bg','panel','panel2','line','mut','txt','acc','accb','ok','warn','bad'];
@@ -328,10 +456,29 @@ function buildColors(){var c=el('colors');c.innerHTML='';VARS.forEach(function(k
 function saveTheme(){try{localStorage.setItem('xdm_theme',themeName);localStorage.setItem('xdm_palette',JSON.stringify(palette));}catch(e){}}
 function resetTheme(){try{localStorage.removeItem('xdm_theme');localStorage.removeItem('xdm_palette');}catch(e){}setTheme('Midnight');}
 async function sysInfo(){try{var j=await(await fetch('/api/status',{cache:'no-store'})).json();
- el('sysinfo').innerHTML='Device: <b>'+j.idn+'</b><br>Firmware: <b>'+j.fw+'</b><br>Function: <b>'+j.function+'</b> · Rate: <b>'+j.rate+'</b> · Range: <b>'+j.range+'</b><br>Host: <b>'+location.host+'</b>';}catch(e){}}
+ el('sysinfo').innerHTML=t('l_device')+': <b>'+j.idn+'</b><br>'+t('l_firmware')+': <b>'+j.fw+'</b><br>'+t('l_function')+': <b>'+j.function+'</b> · '+t('l_rate')+': <b>'+j.rate+'</b> · '+t('l_range')+': <b>'+j.range+'</b><br>'+t('l_host')+': <b>'+location.host+'</b>';
+ if(el('sw_follow')&&j.follow!==undefined)el('sw_follow').checked=(j.follow==1);}catch(e){}}
+el('sw_follow').onchange=function(){fetch('/api/devsync?set='+(this.checked?'1':'0'),{cache:'no-store'});};
+el('langsel').onchange=function(){applyLang(this.value);};
 function applyUmode(){var bs=el('umode').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-u')==unitMode);}
 el('umode').onclick=function(e){var u=e.target.getAttribute('data-u');if(!u)return;unitMode=u;try{localStorage.setItem('xdm_unitmode',u);}catch(e){}applyUmode();};
-el('gear').onclick=function(e){e.preventDefault();el('ovl').classList.add('show');buildThemeRow();buildColors();sysInfo();loadNet();applyUmode();};
+var beepOn=(localStorage.getItem('xdm_beep')||'0')=='1',beepSync=(localStorage.getItem('xdm_beepsync')||'1')=='1',contThr=50,diodThr=(parseFloat(localStorage.getItem('xdm_diodthr'))||0.5),contMode='',actx=null,oscg=null;
+function scpi(cmd){return fetch('/api/scpi?cmd='+cmd.replace(/ /g,'+').replace(/\?/g,'%3F'),{cache:'no-store'}).then(function(r){return r.json();}).then(function(j){return j.resp;}).catch(function(){return '';});}
+function pushBuzzer(){if(beepSync)scpi('SYST:BEEP:STAT '+(beepOn?'ON':'OFF'));}
+function setThrUi(){var inp=el('cthr'),u=el('cthru');if(!inp)return;
+ if(cur.k=='DIOD'){inp.min='0.01';inp.max='3';inp.step='0.01';inp.value=diodThr;if(u)u.textContent='V';}
+ else{inp.min='1';inp.max='1000';inp.step='1';inp.value=contThr;if(u)u.textContent='Ω';}}
+function enterCont(){if(cur.k=='CONT')scpi('CONT:THRE?').then(function(r){var n=parseFloat(r);if(n>0)contThr=n;setThrUi();});else setThrUi();pushBuzzer();}
+function beepInit(){if(actx)return;try{actx=new(window.AudioContext||window.webkitAudioContext)();var o=actx.createOscillator();oscg=actx.createGain();o.type='square';o.frequency.value=2400;oscg.gain.value=0;o.connect(oscg);oscg.connect(actx.destination);o.start();}catch(e){}}
+function beep(on){if(!beepOn||!cur||(cur.k!='CONT'&&cur.k!='DIOD')){if(oscg&&actx)oscg.gain.setTargetAtTime(0,actx.currentTime,.01);return;}beepInit();if(!actx||!oscg)return;if(actx.state=='suspended')actx.resume();oscg.gain.setTargetAtTime(on?.04:0,actx.currentTime,.008);}
+document.addEventListener('pointerdown',function(){if(beepOn){beepInit();if(actx&&actx.state=='suspended')actx.resume();}});
+function acdcStr(){var ac=(cur.k=='VAC'||cur.k=='AAC'),dc=(cur.k=='VDC'||cur.k=='ADC');
+ if((!ac&&!dc)||acdcMode=='off')return '';
+ var m=acdcMode=='text'?(ac?'/ AC':'/ DC'):acdcMode=='tilde'?(ac?'~':'='):(ac?'∿':'⎓');
+ return ' <i class="acdc">'+m+'</i>';}
+function applyAcdc(){var bs=el('acdcmode').children;for(var i=0;i<bs.length;i++)bs[i].classList.toggle('active',bs[i].getAttribute('data-a')==acdcMode);}
+el('acdcmode').onclick=function(e){var a=e.target.getAttribute('data-a');if(!a)return;acdcMode=a;try{localStorage.setItem('xdm_acdc',a);}catch(e){}applyAcdc();};
+el('gear').onclick=function(e){e.preventDefault();el('ovl').classList.add('show');buildThemeRow();buildColors();sysInfo();loadNet();applyUmode();applyAcdc();};
 el('ovlx').onclick=function(){el('ovl').classList.remove('show');};
 el('ovl').onclick=function(e){if(e.target===el('ovl'))el('ovl').classList.remove('show');};
 (function(){var ts=document.getElementsByClassName('stab');for(var i=0;i<ts.length;i++){ts[i].onclick=function(){
@@ -341,22 +488,22 @@ el('ovl').onclick=function(e){if(e.target===el('ovl'))el('ovl').classList.remove
 el('saveTheme').onclick=saveTheme;el('resetTheme').onclick=resetTheme;
 el('expBtn').onclick=function(){var io=el('io');io.style.display='block';io.value=JSON.stringify({theme:themeName,palette:palette});io.focus();io.select();el('impActions').style.display='none';};
 el('impBtn').onclick=function(){var io=el('io');io.style.display='block';io.value='';io.focus();el('impActions').style.display='flex';};
-el('impApply').onclick=function(){try{var o=JSON.parse(el('io').value);var p=o.palette||o;palette=p;themeName=o.theme||'Custom';applyPalette(palette);buildColors();buildThemeRow();saveTheme();el('io').style.display='none';el('impActions').style.display='none';}catch(e){alert('Invalid JSON');}};
+el('impApply').onclick=function(){try{var o=JSON.parse(el('io').value);var p=o.palette||o;palette=p;themeName=o.theme||'Custom';applyPalette(palette);buildColors();buildThemeRow();saveTheme();el('io').style.display='none';el('impActions').style.display='none';}catch(e){alert(t('invjson'));}};
 el('factoryBtn').onclick=function(){
- if(!confirm('Factory reset: erase WiFi & network settings and reboot into the setup access point?'))return;
- waitRedirect('http://192.168.4.1/','Factory reset - rebooting into setup AP');
- el('waitm').textContent='Connect your device to WiFi "OWON-XDM-Remote-Setup", then open http://192.168.4.1';
+ if(!confirm(t('fac_confirm')))return;
+ waitRedirect('http://192.168.4.1/',t('fac_title'));
+ el('waitm').textContent=t('fac_msg');
  fetch('/api/factory?confirm=1',{cache:'no-store'}).catch(function(){});};
 async function loadNet(){try{var j=await(await fetch('/api/net',{cache:'no-store'})).json();
- el('n_host').value=j.host||'';el('n_dhcp').value=String(j.dhcp);
+ el('n_dhcp').value=String(j.dhcp);
  el('n_ip').value=j.ip||j.cur_ip||'';el('n_mask').value=j.mask||'';el('n_gw').value=j.gw||'';el('n_dns').value=j.dns||'';
- el('netmsg').textContent='Current IP: '+(j.cur_ip||'?');}catch(e){el('netmsg').textContent='Network config not readable';}}
-function netQ(){return 'host='+encodeURIComponent(el('n_host').value||'owon')+'&dhcp='+el('n_dhcp').value+'&ip='+encodeURIComponent(el('n_ip').value)+'&mask='+encodeURIComponent(el('n_mask').value)+'&gw='+encodeURIComponent(el('n_gw').value)+'&dns='+encodeURIComponent(el('n_dns').value);}
+ el('netmsg').textContent=t('net_curip')+(j.cur_ip||'?');}catch(e){el('netmsg').textContent=t('net_unread');}}
+function netQ(){return 'dhcp='+el('n_dhcp').value+'&ip='+encodeURIComponent(el('n_ip').value)+'&mask='+encodeURIComponent(el('n_mask').value)+'&gw='+encodeURIComponent(el('n_gw').value)+'&dns='+encodeURIComponent(el('n_dns').value);}
 async function netSave(rb){try{var r=await(await fetch('/api/net?'+netQ(),{cache:'no-store'})).json();
- if(!r.ok){el('netmsg').textContent='Error: '+(r.err||'?');return;}
- if(rb){var host=(el('n_host').value||'owon').trim();var url='http://'+host+'.local/';waitRedirect(url,'Apply & reboot...');try{await fetch('/reboot',{method:'POST'});}catch(e){}}
- else el('netmsg').textContent='Saved. Active after reboot.';
-}catch(e){el('netmsg').textContent='Error: '+e;}}
+ if(!r.ok){el('netmsg').textContent=t('net_err')+(r.err||'?');return;}
+ if(rb){waitRedirect('http://owon.local/',t('net_applyt'));try{await fetch('/reboot',{method:'POST'});}catch(e){}}
+ else el('netmsg').textContent=t('net_saved');
+}catch(e){el('netmsg').textContent=t('net_err')+e;}}
 el('netSave').onclick=function(){netSave(false);};
 el('netReboot').onclick=function(){netSave(true);};
 async function checkCrash(){try{var j=await(await fetch('/api/crash',{cache:'no-store'})).json();
@@ -373,8 +520,22 @@ applyYmodeUI();
 el('sw_sps').checked=showSps;el('sw_mem').checked=showMem;
 el('sw_sps').onchange=function(){showSps=el('sw_sps').checked;try{localStorage.setItem('xdm_show_sps',showSps?'1':'0');}catch(e){}applyTopbar();};
 el('sw_mem').onchange=function(){showMem=el('sw_mem').checked;try{localStorage.setItem('xdm_show_mem',showMem?'1':'0');}catch(e){}applyTopbar();};
+function applyBeepUi(){if(el('sw_beep'))el('sw_beep').checked=beepOn;if(el('sw_beepsync'))el('sw_beepsync').checked=beepSync;if(el('cb_sync'))el('cb_sync').checked=beepSync;var b=el('beepbtn');if(b){b.classList.toggle('on',beepOn);b.textContent=(beepOn?t('beepon'):t('beepoff'));}}
+function setBeepLocal(v){beepOn=v;try{localStorage.setItem('xdm_beep',v?'1':'0');}catch(e){}if(beepOn){beepInit();if(actx&&actx.state=='suspended')actx.resume();}else beep(false);applyBeepUi();}
+function setBeep(v){setBeepLocal(v);pushBuzzer();}
+function setSync(v){beepSync=v;try{localStorage.setItem('xdm_beepsync',v?'1':'0');}catch(e){}applyBeepUi();
+ if(v)scpi('SYST:BEEP:STAT?').then(function(r){r=(r||'').trim();if(r==='')return;setBeepLocal(r.toUpperCase()!=='OFF');});}
+el('sw_beep').onchange=function(){setBeep(el('sw_beep').checked);};
+el('sw_beepsync').onchange=function(){setSync(el('sw_beepsync').checked);};
+el('cb_sync').onchange=function(){setSync(el('cb_sync').checked);};
+el('beepbtn').onclick=function(){setBeep(!beepOn);};
+el('cthr').onchange=function(){
+ if(cur.k=='DIOD'){var v=parseFloat(this.value);if(!(v>=0.01&&v<=3)){this.value=diodThr;return;}diodThr=v;try{localStorage.setItem('xdm_diodthr',v);}catch(e){}}
+ else{var n=parseInt(this.value,10);if(!(n>=1&&n<=1000)){this.value=contThr;return;}contThr=n;scpi('CONT:THRE '+n);}};
+applyBeepUi();
 applyTopbar();
-loadTheme();applyUmode();buildTabs();buildSubs();checkCrash();
+lastEspGood=lastMeterGood=performance.now();
+loadTheme();applyUmode();applyAcdc();buildTabs();buildSubs();applyLang(LANG);checkCrash();
 setInterval(function(){if(trig=='auto'&&!hold)reading();},250);
 setInterval(status,1500);status();reading();
 </script></body></html>

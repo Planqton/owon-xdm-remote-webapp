@@ -91,6 +91,12 @@ _range_req = None        # None | 'auto' | 'up' | 'down'
 _range_idx = 3
 _range_lbl = ''
 _auto = 1
+_mem_max = 0              # high-water of (free+alloc); stable heap ceiling for the RAM meter
+_follow_dev = False       # follow device-side function changes via FUNC? readback (toggle: /api/devsync)
+_follow_cnt = 0
+FOLLOW_EVERY = 6          # read FUNC? every Nth poll cycle while following (keeps MEAS? rate up)
+FUNC_READ_MAP = {'VOLT': 'VDC', 'VOLT AC': 'VAC', 'CURR': 'ADC', 'CURR AC': 'AAC',
+                 'RES': 'RES', 'CONT': 'CONT', 'DIOD': 'DIOD', 'CAP': 'CAP', 'FREQ': 'FREQ'}
 _skip = 0
 # cached reading
 _v_ok, _v_val, _v_raw, _v_ts = False, None, '', 0
@@ -249,7 +255,7 @@ def _refresh_status():
 
 def poll_once():
     global _v_ok, _v_val, _v_raw, _v_ts, _func, _rate, _range_req, _range_idx, _skip
-    global _rpc_cmd, _rpc_resp, _rpc_seq
+    global _rpc_cmd, _rpc_resp, _rpc_seq, _func_req, _follow_cnt
 
     # 1) RPC (from /api/scpi and the SCPI-TCP server): a query waits for a reply,
     #    a write (no '?') is only sent -> no 1s timeout.
@@ -312,6 +318,25 @@ def poll_once():
         _v_ok = False
         _refresh_status()
         return
+
+    # 4.5) follow a function change made ON THE DEVICE (throttled FUNC? readback)
+    if _follow_dev:
+        _follow_cnt += 1
+        if _follow_cnt >= FOLLOW_EVERY:
+            _follow_cnt = 0
+            try:
+                fr = query('FUNC?')
+                if fr:
+                    k = FUNC_READ_MAP.get(fr.strip().strip('"').strip().upper())
+                    if k and k != _func:
+                        log('FOLLOW', 'device -> {}'.format(k))
+                        _func = _func_req = k
+                        _skip = SWITCH_SKIP
+                        _v_ok = False
+                        _refresh_status()
+            except Exception:
+                pass
+            return
 
     # 5) measurement
     raw = query(MEAS_COMMAND)
@@ -430,6 +455,7 @@ def read_net():
     except Exception:
         pass
     cfg['dhcp'] = 0 if str(cfg.get('dhcp')) in ('0', 'False', 'false') else 1
+    cfg['host'] = 'owon'   # hostname is fixed: the device is always reachable at owon.local
     return cfg
 
 
@@ -437,6 +463,31 @@ def write_net(cfg):
     with open('net.dat', 'w') as f:
         for k in ('host', 'dhcp', 'ip', 'mask', 'gw', 'dns'):
             f.write('{}={}\n'.format(k, cfg.get(k, '')))
+
+
+def read_follow():
+    try:
+        with open('dsync.dat') as f:
+            return f.read().strip() == '1'
+    except Exception:
+        return False
+
+
+def write_follow(v):
+    try:
+        with open('dsync.dat', 'w') as f:
+            f.write('1' if v else '0')
+    except Exception:
+        pass
+
+
+def serve_devsync(cl, q):
+    global _follow_dev
+    s = ota.qparam(q, 'set')
+    if s in ('0', '1'):
+        _follow_dev = (s == '1')
+        write_follow(_follow_dev)
+    ota.send(cl, '{{"follow":{}}}'.format(1 if _follow_dev else 0), "application/json")
 
 
 def serve_net_get(cl):
@@ -453,7 +504,8 @@ def serve_net_get(cl):
 
 def serve_net_set(cl, q):
     cfg = read_net()
-    for k in ('host', 'ip', 'mask', 'gw', 'dns'):
+    # 'host' is intentionally NOT settable — owon.local stays fixed (read_net forces it).
+    for k in ('ip', 'mask', 'gw', 'dns'):
         v = ota.qparam(q, k)
         if v != '':
             cfg[k] = v.replace('%20', '').strip()
@@ -517,6 +569,37 @@ def serve_crash(cl, q):
     ota.send(cl, '{{"unclean":{},"log":"{}"}}'.format(unclean, txt), "application/json")
 
 
+# PWA / static assets streamed straight from flash (binary-safe via _send_all).
+# path -> (filename, content-type, cache-control)
+_STATIC = {
+    '/manifest.json': ('manifest.json', 'application/manifest+json', 'no-cache'),
+    '/sw.js':         ('sw.js',         'application/javascript',    'no-cache'),
+    '/icon-192.png':  ('icon-192.png',  'image/png',                 'max-age=604800'),
+    '/icon-512.png':  ('icon-512.png',  'image/png',                 'max-age=604800'),
+    '/favicon.ico':   ('icon-192.png',  'image/png',                 'max-age=604800'),
+    '/apple-touch-icon.png': ('icon-192.png', 'image/png',           'max-age=604800'),
+}
+
+
+def serve_static(cl, path):
+    fn, ctype, cache = _STATIC[path]
+    try:
+        f = open(fn, 'rb')
+    except Exception:
+        ota.send(cl, 'not found', 'text/plain', '404 Not Found')
+        return
+    ota._send_all(cl, "HTTP/1.1 200 OK\r\nContent-Type: {}\r\n"
+                      "Cache-Control: {}\r\nConnection: close\r\n\r\n".format(ctype, cache))
+    try:
+        while True:
+            chunk = f.read(512)
+            if not chunk:
+                break
+            ota._send_all(cl, chunk)
+    finally:
+        f.close()
+
+
 def serve_page(cl):
     # Stream the UI from page.html on flash so the ~30KB page never sits in RAM
     # (that headroom is what WiFi needs). __CFG__ is substituted inline; a small
@@ -578,13 +661,17 @@ def serve_reading(cl):
 
 def serve_status(cl):
     g = MODE_MAP.get(_func or _func_req, ('', ''))[1]
+    global _mem_max
     gc.collect()              # report true usage (post-GC) + keep the heap defragged
     mf = gc.mem_free()
     ma = gc.mem_alloc()
+    tot = mf + ma             # wobbles a few hundred B (GC segment accounting)
+    if tot > _mem_max:        # high-water = stable ceiling, known since boot
+        _mem_max = tot
     body = ('{{"idn":"{}","function":"{}","g":"{}","rate":"{}","range":"{}","auto":{},'
-            '"value":{},"raw":"{}","memfree":{},"memalloc":{},"fw":"{}"}}').format(
+            '"value":{},"raw":"{}","memfree":{},"memalloc":{},"memmax":{},"follow":{},"fw":"{}"}}').format(
         _idn, _func or _func_req, g, _rate or '?', _range_lbl, _auto,
-        _fmt(_v_val), _v_raw, mf, ma, CODE_TIMESTAMP)
+        _fmt(_v_val), _v_raw, mf, ma, _mem_max, 1 if _follow_dev else 0, CODE_TIMESTAMP)
     ota.send(cl, body, "application/json")
 
 
@@ -731,11 +818,15 @@ def web_server(ip):
                 serve_rate(cl, q)
             elif path == '/api/range':
                 serve_range(cl, q)
+            elif path in _STATIC:
+                serve_static(cl, path)
             elif path == '/api/net':
-                if ota.qparam(q, 'host') or ota.qparam(q, 'dhcp'):
+                if ota.qparam(q, 'dhcp') or ota.qparam(q, 'ip'):
                     serve_net_set(cl, q)
                 else:
                     serve_net_get(cl)
+            elif path == '/api/devsync':
+                serve_devsync(cl, q)
             elif path == '/api/factory':
                 serve_factory(cl, q)
             elif path == '/api/crash':
@@ -756,7 +847,8 @@ def web_server(ip):
 # ─── Entry ────────────────────────────────────────────────────────────────────────
 
 def run():
-    global tx_pin, rx_pin, led
+    global tx_pin, rx_pin, led, _follow_dev
+    _follow_dev = read_follow()
     tx_pin = Pin(TX_PIN, Pin.IN)
     rx_pin = Pin(RX_PIN, Pin.IN)
     led = Pin(LED_PIN, Pin.OUT)
